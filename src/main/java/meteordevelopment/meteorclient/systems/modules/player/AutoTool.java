@@ -141,7 +141,7 @@ public class AutoTool extends Module {
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    private void onStartBreakingBlock(StartBreakingBlockEvent event) {
+    public void onStartBreakingBlock(StartBreakingBlockEvent event) {
         if (Modules.get().isActive(InfinityMiner.class)) return;
 
         // Get blockState

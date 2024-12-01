@@ -6,12 +6,15 @@
 package meteordevelopment.meteorclient.systems.modules.world;
 
 import meteordevelopment.meteorclient.events.entity.player.BlockBreakingCooldownEvent;
+import meteordevelopment.meteorclient.events.entity.player.StartBreakingBlockEvent;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.systems.modules.Modules;
+import meteordevelopment.meteorclient.systems.modules.player.AutoTool;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.render.RenderUtils;
@@ -416,7 +419,13 @@ public class Nuker extends Module {
                 if (count >= maxBlocksPerTick.get()) break;
 
                 boolean canInstaMine = BlockUtils.canInstaBreak(block);
-
+                if (Modules.get().isActive(AutoTool.class)) {
+                    StartBreakingBlockEvent startBreakingBlockEvent = StartBreakingBlockEvent.get(block, BlockUtils.getDirection(block));
+                    Modules.get().get(AutoTool.class).onStartBreakingBlock(startBreakingBlockEvent);
+                    if (startBreakingBlockEvent.isCancelled()){
+                        break;
+                    }
+                }
                 if (rotate.get()) Rotations.rotate(Rotations.getYaw(block), Rotations.getPitch(block), () -> breakBlock(block));
                 else breakBlock(block);
 
