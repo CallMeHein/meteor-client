@@ -10,6 +10,7 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.player.SlotUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.item.Item;
@@ -31,13 +32,13 @@ public class AutoDropPlus extends Module  {
 
 	private final Setting<List<Item>> items = defaultGroup.add(new ItemListSetting.Builder()
 		.name("drop-items")
-		.description("Items to dropping.")
+		.description("Items to drop.")
 		.build()
 	);
 
 	private final Setting<Integer> delay = defaultGroup.add(new IntSetting.Builder()
 		.name("delay")
-		.description("drop delay.")
+		.description("Drop delay.")
 		.defaultValue(5)
 		.min(0)
 		.build()
@@ -45,7 +46,7 @@ public class AutoDropPlus extends Module  {
 
 	private final Setting<Boolean> workInstant = defaultGroup.add(new BoolSetting.Builder()
 		.name("instant-work")
-		.description("Drop or remove items instant.")
+		.description("Drop or remove items instantly")
 		.defaultValue(true)
 		.visible(() -> delay.get() == 0)
 		.build()
@@ -53,21 +54,21 @@ public class AutoDropPlus extends Module  {
 
 	private final Setting<Boolean> removeContainersItems = defaultGroup.add(new BoolSetting.Builder()
 		.name("work-in-containers")
-		.description("Remove items in chests?.")
+		.description("Remove items from containers?")
 		.defaultValue(true)
 		.build()
 	);
 
 	private final Setting<Boolean> autoDropExcludeHotbar = defaultGroup.add(new BoolSetting.Builder()
 		.name("work-in-hotbar")
-		.description("Allow hotbar?.")
+		.description("Drop items from hotbar?.")
 		.defaultValue(true)
 		.build()
 	);
 
 	private final Setting<Boolean> removeItems = defaultGroup.add(new BoolSetting.Builder()
 		.name("remover")
-		.description("Remove items?.")
+		.description("Remove items?")
 		.defaultValue(true)
 		.build()
 	);
