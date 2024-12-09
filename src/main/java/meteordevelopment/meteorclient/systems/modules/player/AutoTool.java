@@ -34,6 +34,21 @@ public class AutoTool extends Module {
 
     // General
 
+    private final Setting<Boolean> fromInventory = sgGeneral.add(new BoolSetting.Builder()
+        .name("fromInventory")
+        .description("Whether to use tools from your inventory.")
+        .defaultValue(false)
+        .build()
+    );
+
+    private final Setting<Boolean> hotbarFirst = sgGeneral.add(new BoolSetting.Builder()
+        .name("hotbar-first")
+        .description("Whether or not to prefer using tools from the hotbar over tools from your inventory.")
+        .defaultValue(true)
+        .visible(fromInventory::get)
+        .build()
+    );
+
     private final Setting<EnchantPreference> prefer = sgGeneral.add(new EnumSetting.Builder<EnchantPreference>()
         .name("prefer")
         .description("Either to prefer Silk Touch, Fortune, or none.")
@@ -115,6 +130,9 @@ public class AutoTool extends Module {
     private boolean shouldSwitch;
     private int ticks;
     private int bestSlot;
+    private int previousToolSlot;
+    private int previousSelectedSlot;
+    private int newToolSlot;
 
     public AutoTool() {
         super(Categories.Player, "auto-tool", "Automatically switches to the most effective tool when performing an action.");
@@ -140,6 +158,8 @@ public class AutoTool extends Module {
         wasPressed = mc.options.attackKey.isPressed();
     }
 
+    // This function was mostly taken from MeteorTweaks by Declipsonator, with a few patches to work in the 1.21 build of Meteor
+    // https://github.com/Declipsonator/Meteor-Tweaks
     @EventHandler(priority = EventPriority.HIGH)
     public void onStartBreakingBlock(StartBreakingBlockEvent event) {
         if (Modules.get().isActive(InfinityMiner.class)) return;
@@ -154,9 +174,11 @@ public class AutoTool extends Module {
         double bestScore = -1;
         bestSlot = -1;
 
-        for (int i = 0; i < 9; i++) {
-            ItemStack itemStack = mc.player.getInventory().getStack(i);
+        boolean inHotbar = false;
 
+        for (int i = 0; i < 36; i++) {
+            ItemStack itemStack = mc.player.getInventory().getStack(i);
+            System.out.println(itemStack);
             if (listMode.get() == ListMode.Whitelist && !whitelist.get().contains(itemStack.getItem())) continue;
             if (listMode.get() == ListMode.Blacklist && blacklist.get().contains(itemStack.getItem())) continue;
 
@@ -164,16 +186,36 @@ public class AutoTool extends Module {
             if (score < 0) continue;
 
             if (score > bestScore) {
-                bestScore = score;
-                bestSlot = i;
+                if(!inHotbar || i < 9 || mc.player.getInventory().getStack(i).getItem() != mc.player.getInventory().getStack(bestSlot).getItem()) {
+                    bestScore = score;
+                    bestSlot = i;
+                    if (i < 9) {
+                        inHotbar = true;
+                    }
+                } else if(!hotbarFirst.get()) {
+                    bestScore = score;
+                    bestSlot = i;
+                }
             }
         }
 
         if ((bestSlot != -1 && (bestScore > getScore(currentStack, blockState, silkTouchForEnderChest.get(), fortuneForOresCrops.get(), prefer.get(), itemStack -> !shouldStopUsing(itemStack))) || shouldStopUsing(currentStack) || !isTool(currentStack))) {
             ticks = switchDelay.get();
+            if(fromInventory.get() && bestSlot > 8) {
+                if(InvUtils.findEmpty().isHotbar()) {
+                    previousSelectedSlot = mc.player.getInventory().selectedSlot;
+                    mc.player.getInventory().selectedSlot = mc.player.getInventory().getSwappableHotbarSlot();
+                    InvUtils.move().from(bestSlot).to(mc.player.getInventory().getSwappableHotbarSlot());
+                } else {
+                    InvUtils.move().from(bestSlot).toHotbar(mc.player.getInventory().selectedSlot);
+                }
+                previousToolSlot = bestSlot;
+                newToolSlot = mc.player.getInventory().selectedSlot;
 
-            if (ticks == 0) InvUtils.swap(bestSlot, true);
-            else shouldSwitch = true;
+            } else {
+                if (ticks == 0) InvUtils.swap(bestSlot, true);
+                else shouldSwitch = true;
+            }
         }
 
         // Anti break
