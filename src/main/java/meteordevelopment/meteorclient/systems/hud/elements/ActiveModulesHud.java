@@ -28,6 +28,12 @@ public class ActiveModulesHud extends HudElement {
         .build()
     );
 
+    private final Setting<List<Module>> forceModules = sgGeneral.add(new ModuleListSetting.Builder()
+        .name("force-modules")
+        .description("Show modules even if they are not active.")
+        .build()
+    );
+
     private final Setting<Sort> sort = sgGeneral.add(new EnumSetting.Builder<Sort>()
         .name("sort")
         .description("How to sort active modules.")
@@ -176,8 +182,13 @@ public class ActiveModulesHud extends HudElement {
     public void tick(HudRenderer renderer) {
         modules.clear();
 
-        for (Module module : Modules.get().getActive()) {
-            if (!hiddenModules.get().contains(module)) modules.add(module);
+        for (Module module : Modules.get().getAll()) {
+            if (hiddenModules.get().contains(module)){
+                continue;
+            }
+            if (module.isActive() || forceModules.get().contains(module)) {
+                modules.add(module);
+            }
         }
 
         if (modules.isEmpty()) {
@@ -242,6 +253,7 @@ public class ActiveModulesHud extends HudElement {
 
         switch (colorMode.get()) {
             case Random -> color = module.color;
+            case Activation -> color = module.isActive() ? Color.GREEN : Color.RED;
             case Rainbow -> {
                 rainbowHue2 += rainbowSpread.get();
                 int c = java.awt.Color.HSBtoRGB((float) rainbowHue2, rainbowSaturation.get().floatValue(), rainbowBrightness.get().floatValue());
@@ -342,6 +354,7 @@ public class ActiveModulesHud extends HudElement {
 
     public enum ColorMode {
         Flat,
+        Activation,
         Random,
         Rainbow
     }
