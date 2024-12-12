@@ -42,6 +42,13 @@ public class ActiveModulesHud extends HudElement {
         .build()
     );
 
+    private final Setting<Boolean> showKeybind = sgGeneral.add(new BoolSetting.Builder()
+        .name("show-keybind")
+        .description("Shows the module keybind next to the name in the active modules list.")
+        .defaultValue(false)
+        .build()
+    );
+
     private final Setting<SettingColor> moduleInfoColor = sgGeneral.add(new ColorSetting.Builder()
         .name("module-info-color")
         .description("Color of module info text.")
@@ -259,6 +266,15 @@ public class ActiveModulesHud extends HudElement {
             }
         }
 
+        if (showKeybind.get()) {
+            String keybind = module.keybind.toString();
+            if (!keybind.equals("None")) {
+                keybind = "[" + keybind + "]";
+                renderer.text(keybind, x + emptySpace + textLength, y, color, shadow.get(), getScale());
+                textLength += emptySpace + renderer.textWidth(keybind, shadow.get(), getScale());
+            }
+        }
+
         if (outlines.get()) {
             if (index == 0) {
                 renderer.quad(x - 2 - outlineWidth.get(), y - 2, outlineWidth.get(), textHeight + 4, prevColor, prevColor, color, color); // Left quad
@@ -304,6 +320,13 @@ public class ActiveModulesHud extends HudElement {
             if (info != null) width += renderer.textWidth(" ", shadow.get(), getScale()) + renderer.textWidth(info, shadow.get(), getScale());
         }
 
+        if (showKeybind.get()) {
+            String keybind = module.keybind.toString();
+            if (!keybind.equals("None")) {
+                keybind = "[" + keybind + "]";
+                width += renderer.textWidth(" ", shadow.get(), getScale()) + renderer.textWidth(keybind, shadow.get(), getScale());
+            }
+        }
         return width;
     }
 
