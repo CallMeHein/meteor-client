@@ -439,7 +439,6 @@ public class Modules extends System<Modules> {
         add(new AntiHunger());
         add(new AutoEat());
         add(new AutoClicker());
-        add(new AutoDropPlus());
         add(new AutoFish());
         add(new AutoGap());
         add(new AutoMend());
