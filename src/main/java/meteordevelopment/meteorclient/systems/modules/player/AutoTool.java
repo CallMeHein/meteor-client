@@ -34,8 +34,8 @@ public class AutoTool extends Module {
 
     // General
 
-    private final Setting<Boolean> fromInventory = sgGeneral.add(new BoolSetting.Builder()
-        .name("fromInventory")
+    public final Setting<Boolean> fromInventory = sgGeneral.add(new BoolSetting.Builder()
+        .name("from-inventory")
         .description("Whether to use tools from your inventory.")
         .defaultValue(false)
         .build()
@@ -70,14 +70,14 @@ public class AutoTool extends Module {
         .build()
     );
 
-    private final Setting<Boolean> antiBreak = sgGeneral.add(new BoolSetting.Builder()
+    public final Setting<Boolean> antiBreak = sgGeneral.add(new BoolSetting.Builder()
         .name("anti-break")
         .description("Stops you from breaking your tool.")
         .defaultValue(false)
         .build()
     );
 
-    private final Setting<Integer> breakDurability = sgGeneral.add(new IntSetting.Builder()
+    public final Setting<Integer> breakDurability = sgGeneral.add(new IntSetting.Builder()
         .name("anti-break-percentage")
         .description("The durability percentage to stop using a tool.")
         .defaultValue(10)

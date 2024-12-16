@@ -41,21 +41,21 @@ public class Nuker extends Module {
 
     // General
 
-    private final Setting<Shape> shape = sgGeneral.add(new EnumSetting.Builder<Shape>()
+    public final Setting<Shape> shape = sgGeneral.add(new EnumSetting.Builder<Shape>()
             .name("shape")
             .description("The shape of nuking algorithm.")
             .defaultValue(Shape.Sphere)
             .build()
     );
 
-    private final Setting<Nuker.Mode> mode = sgGeneral.add(new EnumSetting.Builder<Nuker.Mode>()
+    public final Setting<Nuker.Mode> mode = sgGeneral.add(new EnumSetting.Builder<Nuker.Mode>()
             .name("mode")
             .description("The way the blocks are broken.")
             .defaultValue(Nuker.Mode.Flatten)
             .build()
     );
 
-    private final Setting<Double> range = sgGeneral.add(new DoubleSetting.Builder()
+    public final Setting<Double> range = sgGeneral.add(new DoubleSetting.Builder()
             .name("range")
             .description("The break range.")
             .defaultValue(4)
@@ -118,14 +118,14 @@ public class Nuker extends Module {
             .build()
     );
 
-    private final Setting<Integer> delay = sgGeneral.add(new IntSetting.Builder()
+    public final Setting<Integer> delay = sgGeneral.add(new IntSetting.Builder()
             .name("delay")
             .description("Delay in ticks between breaking blocks.")
             .defaultValue(0)
             .build()
     );
 
-    private final Setting<Integer> maxBlocksPerTick = sgGeneral.add(new IntSetting.Builder()
+    public final Setting<Integer> maxBlocksPerTick = sgGeneral.add(new IntSetting.Builder()
             .name("max-blocks-per-tick")
             .description("Maximum blocks to try to break per tick. Useful when insta mining.")
             .defaultValue(1)
@@ -134,28 +134,28 @@ public class Nuker extends Module {
             .build()
     );
 
-    private final Setting<Nuker.SortMode> sortMode = sgGeneral.add(new EnumSetting.Builder<Nuker.SortMode>()
+    public final Setting<Nuker.SortMode> sortMode = sgGeneral.add(new EnumSetting.Builder<Nuker.SortMode>()
             .name("sort-mode")
             .description("The blocks you want to mine first.")
             .defaultValue(Nuker.SortMode.Closest)
             .build()
     );
 
-    private final Setting<Boolean> swingHand = sgGeneral.add(new BoolSetting.Builder()
+    public final Setting<Boolean> swingHand = sgGeneral.add(new BoolSetting.Builder()
             .name("swing-hand")
             .description("Swing hand client side.")
             .defaultValue(true)
             .build()
     );
 
-    private final Setting<Boolean> packetMine = sgGeneral.add(new BoolSetting.Builder()
+    public final Setting<Boolean> packetMine = sgGeneral.add(new BoolSetting.Builder()
             .name("packet-mine")
             .description("Attempt to instamine everything at once.")
             .defaultValue(false)
             .build()
     );
 
-    private final Setting<Boolean> rotate = sgGeneral.add(new BoolSetting.Builder()
+    public final Setting<Boolean> rotate = sgGeneral.add(new BoolSetting.Builder()
             .name("rotate")
             .description("Rotates server-side to the block being mined.")
             .defaultValue(true)
@@ -164,7 +164,7 @@ public class Nuker extends Module {
 
     // Whitelist and blacklist
 
-    private final Setting<ListMode> listMode = sgWhitelist.add(new EnumSetting.Builder<ListMode>()
+    public final Setting<ListMode> listMode = sgWhitelist.add(new EnumSetting.Builder<ListMode>()
             .name("list-mode")
             .description("Selection mode.")
             .defaultValue(ListMode.Blacklist)
@@ -178,7 +178,7 @@ public class Nuker extends Module {
             .build()
     );
 
-    private final Setting<List<Block>> whitelist = sgWhitelist.add(new BlockListSetting.Builder()
+    public final Setting<List<Block>> whitelist = sgWhitelist.add(new BlockListSetting.Builder()
             .name("whitelist")
             .description("The blocks you want to mine.")
             .visible(() -> listMode.get() == ListMode.Whitelist)

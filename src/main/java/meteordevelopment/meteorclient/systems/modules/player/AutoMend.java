@@ -25,7 +25,7 @@ import java.util.List;
 public class AutoMend extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
-    private final Setting<List<Item>> blacklist = sgGeneral.add(new ItemListSetting.Builder()
+    public final Setting<List<Item>> blacklist = sgGeneral.add(new ItemListSetting.Builder()
         .name("blacklist")
         .description("Item blacklist.")
         .filter(item -> item.getComponents().get(DataComponentTypes.DAMAGE) != null)
@@ -39,7 +39,7 @@ public class AutoMend extends Module {
         .build()
     );
 
-    private final Setting<Boolean> autoDisable = sgGeneral.add(new BoolSetting.Builder()
+    public final Setting<Boolean> autoDisable = sgGeneral.add(new BoolSetting.Builder()
         .name("auto-disable")
         .description("Automatically disables when there are no more items to repair.")
         .defaultValue(true)

@@ -23,7 +23,7 @@ import net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket;
 public class AutoTotem extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
-    private final Setting<Mode> mode = sgGeneral.add(new EnumSetting.Builder<Mode>()
+    public final Setting<Mode> mode = sgGeneral.add(new EnumSetting.Builder<Mode>()
         .name("mode")
         .description("Determines when to hold a totem, strict will always hold.")
         .defaultValue(Mode.Smart)

@@ -51,7 +51,7 @@ public class KillAura extends Module {
 
     // General
 
-    private final Setting<Weapon> weapon = sgGeneral.add(new EnumSetting.Builder<Weapon>()
+    public final Setting<Weapon> weapon = sgGeneral.add(new EnumSetting.Builder<Weapon>()
         .name("weapon")
         .description("Only attacks an entity when a specified weapon is in your hand.")
         .defaultValue(Weapon.All)
@@ -65,7 +65,7 @@ public class KillAura extends Module {
         .build()
     );
 
-    private final Setting<Boolean> autoSwitch = sgGeneral.add(new BoolSetting.Builder()
+    public final Setting<Boolean> autoSwitch = sgGeneral.add(new BoolSetting.Builder()
         .name("auto-switch")
         .description("Switches to your selected weapon when attacking the target.")
         .defaultValue(false)
@@ -103,7 +103,7 @@ public class KillAura extends Module {
 
     // Targeting
 
-    private final Setting<Set<EntityType<?>>> entities = sgTargeting.add(new EntityTypeListSetting.Builder()
+    public final Setting<Set<EntityType<?>>> entities = sgTargeting.add(new EntityTypeListSetting.Builder()
         .name("entities")
         .description("Entities to attack.")
         .onlyAttackable()
