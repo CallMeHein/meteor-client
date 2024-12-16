@@ -6,6 +6,7 @@
 package meteordevelopment.meteorclient.systems.modules.world;
 
 import baritone.api.BaritoneAPI;
+import baritone.api.Settings;
 import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.process.ICustomGoalProcess;
 import meteordevelopment.meteorclient.settings.*;
@@ -27,6 +28,7 @@ import net.minecraft.util.Identifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static net.minecraft.block.Blocks.COBBLESTONE;
 import static net.minecraft.enchantment.Enchantments.MENDING;
@@ -98,6 +100,9 @@ public class AutoCobbleFarm extends Module {
     @Override
     public void onActivate() {
         shouldStop = false;
+        Settings settings = BaritoneAPI.getSettings();
+        settings.allowBreak.value = false;
+        settings.allowPlace.value = false;
         // Modules
         AutoEat autoEat = Modules.get().get(AutoEat.class);
         AutoMend autoMend = Modules.get().get(AutoMend.class);
@@ -168,6 +173,7 @@ public class AutoCobbleFarm extends Module {
             return;
         }
         List<ItemStack> inventory = mc.player.getInventory().main;
+        List<ItemStack> offhand = mc.player.getInventory().offHand;
         List<ItemStack> hotbar = inventory.stream().filter(itemStack -> inventory.indexOf(itemStack) <= 8).toList(); // index 0 to 8 are the hotbar
         if (hotbar.stream().noneMatch(itemStack ->(itemStack.getItem() instanceof SwordItem) && !itemStack.getEnchantments().getEnchantments().contains(MENDING))) {
             ChatUtils.error("AutoCobbleFarm: No sword with mending found in hotbar");
@@ -187,7 +193,7 @@ public class AutoCobbleFarm extends Module {
             return;
         }
 
-        if (inventory.stream().noneMatch(itemStack -> itemStack.getItem() == Items.TOTEM_OF_UNDYING)){
+        if (Stream.concat(inventory.stream(), offhand.stream()).noneMatch(itemStack -> itemStack.getItem() == Items.TOTEM_OF_UNDYING)){
             ChatUtils.error("AutoCobbleFarm: No totem found in inventory");
             shouldStop = true;
             return;
