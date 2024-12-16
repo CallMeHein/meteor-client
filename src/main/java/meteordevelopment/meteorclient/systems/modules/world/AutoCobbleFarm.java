@@ -187,7 +187,7 @@ public class AutoCobbleFarm extends Module {
             return;
         }
 
-        if (inventory.stream().noneMatch(itemStack -> itemStack.getItem() instanceof PickaxeItem && !itemStack.getEnchantments().getEnchantments().contains(MENDING))){
+        if (Stream.concat(inventory.stream(), offhand.stream()).noneMatch(itemStack -> itemStack.getItem() instanceof PickaxeItem && !itemStack.getEnchantments().getEnchantments().contains(MENDING))){
             ChatUtils.error("AutoCobbleFarm: No pickaxes with mending found in inventory");
             shouldStop = true;
             return;
