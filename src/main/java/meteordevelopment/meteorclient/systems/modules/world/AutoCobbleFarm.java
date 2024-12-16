@@ -9,6 +9,8 @@ import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
 import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.process.ICustomGoalProcess;
+import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
+import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -21,9 +23,13 @@ import meteordevelopment.meteorclient.systems.modules.player.AutoMend;
 import meteordevelopment.meteorclient.systems.modules.player.AutoTool;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
+import meteordevelopment.orbit.EventHandler;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,10 +92,41 @@ public class AutoCobbleFarm extends Module {
     );
 
     private boolean shouldStop = false;
+    private BlockPos baritoneGoal;
+    private boolean joining = false;
 
 
     public AutoCobbleFarm() {
         super(Categories.World, "auto-cobble-farm", "Automatically farm cobble with nuker and mend pickaxes");
+        runInMainMenu = true; // prevent MeteorExecutor from aborting on game leave
+    }
+
+    @EventHandler
+    public void onGameJoin(GameJoinedEvent event){
+        if (isActive()){
+            joining = true;
+            MeteorExecutor.execute(() -> {
+                while (!fullyJoinedServer()){
+                    sleep(5000);
+                }
+                sleep(5000);
+                ICustomGoalProcess goalProcess = BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess();
+                goalProcess.setGoalAndPath(new GoalBlock(baritoneGoal));
+                joining = false;
+            });
+        }
+    }
+
+
+    @EventHandler
+    public void onGameLeft(GameLeftEvent event){
+        if (isActive()) {
+            ICustomGoalProcess goalProcess = BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess();
+            GoalBlock goal = (GoalBlock) goalProcess.getGoal();
+            if (goal != null) {
+                baritoneGoal = goal.getGoalPos();
+            }
+        }
     }
 
     @Override
@@ -201,8 +238,8 @@ public class AutoCobbleFarm extends Module {
     }
 
     private void waitForArrival(ICustomGoalProcess goalProcess) {
-        while (goalProcess.isActive() && !shouldStop) {
-            sleep(500);
+        while (joining || (goalProcess.isActive() && !shouldStop) || !fullyJoinedServer()) {
+            sleep(1000);
         }
     }
 
@@ -249,6 +286,10 @@ public class AutoCobbleFarm extends Module {
 
     private void waitForPickaxeDurability(AutoTool autoTool, PickaxeDurability pickaxeDurability) {
         while(!shouldStop) {
+            if (!fullyJoinedServer()){
+                sleep(500);
+                continue;
+            }
             List<ItemStack> items = new ArrayList<>(mc.player.getInventory().main);
             items.addAll(mc.player.getInventory().offHand);
             List<ItemStack> pickaxes = items.stream().filter(item -> item.getItem() instanceof PickaxeItem).toList();
@@ -261,7 +302,8 @@ public class AutoCobbleFarm extends Module {
             if (done) {
                 break;
             }
-            sleep(500);
+            System.out.println("Waiting for pickaxe durability " + pickaxeDurability.toString());
+            sleep(5000);
         }
     }
 
@@ -282,5 +324,13 @@ public class AutoCobbleFarm extends Module {
         if (module.isActive() != active){
             module.toggle();
         }
+    }
+
+    private boolean fullyJoinedServer() {
+        ClientPlayerEntity player = mc.player;
+        if (player == null) return false;
+        PlayerInventory inventory = player.getInventory();
+        if (inventory == null) return false;
+        return inventory.main.stream().anyMatch(itemStack -> itemStack.getItem() != Items.AIR); // if we have any non-air item, we're out of the queue
     }
 }
