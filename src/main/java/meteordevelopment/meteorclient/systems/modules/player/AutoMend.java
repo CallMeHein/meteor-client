@@ -32,7 +32,7 @@ public class AutoMend extends Module {
         .build()
     );
 
-    private final Setting<Boolean> force = sgGeneral.add(new BoolSetting.Builder()
+    public final Setting<Boolean> force = sgGeneral.add(new BoolSetting.Builder()
         .name("force")
         .description("Replaces item in offhand even if there is some other non-repairable item.")
         .defaultValue(false)

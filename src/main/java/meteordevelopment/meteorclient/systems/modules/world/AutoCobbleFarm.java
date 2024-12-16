@@ -235,6 +235,7 @@ public class AutoCobbleFarm extends Module {
 
     private void setupAutoMend(AutoMend autoMend) {
         autoMend.blacklist.set(List.of(Items.DIAMOND_SWORD, Items.NETHERITE_SWORD, Items.ELYTRA));
+        autoMend.force.set(true);
         autoMend.autoDisable.set(false);
         setModuleActive(autoMend, true);
     }
