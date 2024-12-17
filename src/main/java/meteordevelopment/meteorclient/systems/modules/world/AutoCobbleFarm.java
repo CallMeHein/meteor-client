@@ -111,7 +111,9 @@ public class AutoCobbleFarm extends Module {
                 }
                 sleep(5000);
                 ICustomGoalProcess goalProcess = BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess();
-                goalProcess.setGoalAndPath(new GoalBlock(baritoneGoal));
+                if (baritoneGoal != null) {
+                    goalProcess.setGoalAndPath(new GoalBlock(baritoneGoal));
+                }
                 joining = false;
             });
         }
