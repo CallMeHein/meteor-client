@@ -282,7 +282,7 @@ public class AutoCobbleFarm extends Module {
     private void setupKillAura(KillAura killAura) {
         killAura.weapon.set(KillAura.Weapon.Sword);
         killAura.autoSwitch.set(true);
-        killAura.entities.set(Set.of(ZOMBIE, SKELETON, SPIDER, CREEPER, DROWNED, WITCH));
+        killAura.entities.set(Set.of(ZOMBIE, SKELETON, SPIDER, CREEPER, DROWNED, WITCH, ZOMBIE_VILLAGER));
         setModuleActive(killAura, true);
     }
 
