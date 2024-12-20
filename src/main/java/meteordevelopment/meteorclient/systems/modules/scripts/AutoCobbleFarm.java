@@ -3,7 +3,7 @@
  * Copyright (c) Meteor Development.
  */
 
-package meteordevelopment.meteorclient.systems.modules.world;
+package meteordevelopment.meteorclient.systems.modules.scripts;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
@@ -21,6 +21,7 @@ import meteordevelopment.meteorclient.systems.modules.misc.InventoryTweaks;
 import meteordevelopment.meteorclient.systems.modules.player.AutoEat;
 import meteordevelopment.meteorclient.systems.modules.player.AutoMend;
 import meteordevelopment.meteorclient.systems.modules.player.AutoTool;
+import meteordevelopment.meteorclient.systems.modules.world.Nuker;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.orbit.EventHandler;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.setModuleActive;
 import static net.minecraft.block.Blocks.COBBLESTONE;
 import static net.minecraft.enchantment.Enchantments.MENDING;
 import static net.minecraft.entity.EntityType.*;
@@ -97,7 +99,7 @@ public class AutoCobbleFarm extends Module {
 
 
     public AutoCobbleFarm() {
-        super(Categories.World, "auto-cobble-farm", "Automatically farm cobble with nuker and mend pickaxes");
+        super(Categories.Script, "auto-cobble-farm", "Automatically farm cobble with nuker and mend pickaxes");
         runInMainMenu = true; // prevent MeteorExecutor from aborting on game leave
     }
 
@@ -319,12 +321,6 @@ public class AutoCobbleFarm extends Module {
             Thread.sleep(ms);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private void setModuleActive(Module module, boolean active){
-        if (module.isActive() != active){
-            module.toggle();
         }
     }
 
