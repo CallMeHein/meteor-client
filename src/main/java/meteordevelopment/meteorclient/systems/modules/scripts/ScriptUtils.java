@@ -203,6 +203,14 @@ public class ScriptUtils {
         return getPlayerEmptySlotCount(mc) > 0;
     }
 
+    static boolean playerInventoryHasItem(MinecraftClient mc, Item item) {
+        return mc.player.getInventory().main.stream().anyMatch(itemStack -> itemStack.getItem() == item);
+    }
+
+    static ItemStack getFirstItemInPlayerInventory(MinecraftClient mc, Item item) {
+        return mc.player.getInventory().main.stream().filter(itemStack -> itemStack.getItem() == item).toList().getFirst();
+    }
+
     //
     // Flow control
     //

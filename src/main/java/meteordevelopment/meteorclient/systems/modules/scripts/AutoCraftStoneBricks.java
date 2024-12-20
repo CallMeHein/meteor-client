@@ -72,17 +72,17 @@ public class AutoCraftStoneBricks extends Module {
     @Override
     public void onActivate() {
         shouldStop = false;
-        if (this.isActive() && mc.player.getInventory().main.stream().anyMatch(itemStack -> itemStack.getItem() == Items.SHULKER_BOX)){
+        if (this.isActive() && playerInventoryHasItem(mc, Items.SHULKER_BOX)){
             ChatUtils.error("HighwayAutoCraft: Can't start the script if you're already carrying a shulker box, sorry");
             this.toggle();
             return;
         }
-        if (this.isActive() && mc.player.getInventory().main.stream().anyMatch(itemStack -> itemStack.getItem() == Items.STONE)){
+        if (this.isActive() && playerInventoryHasItem(mc, Items.STONE)){
             ChatUtils.error("HighwayAutoCraft: Can't start the script if you're already carrying stone, sorry");
             this.toggle();
             return;
         }
-        if (this.isActive() && mc.player.getInventory().main.stream().anyMatch(itemStack -> itemStack.getItem() == Items.STONE_BRICKS)){
+        if (this.isActive() && playerInventoryHasItem(mc, Items.STONE_BRICKS)){
             ChatUtils.error("HighwayAutoCraft: Can't start the script if you're already carrying stone bricks, sorry");
             this.toggle();
             return;
@@ -103,22 +103,11 @@ public class AutoCraftStoneBricks extends Module {
         ICustomGoalProcess goalProcess =  BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess();
         IBuilderProcess builderProcess = BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess();
 
-        System.out.println("Walking to stone storage");
-        baritoneGetToBlock(goalProcess, stoneStorage.get());
-
-        System.out.println("Opening stone storage");
-        rightClick(mc, stoneStorage.get());
-        waitUntilTrue(() -> mc.currentScreen instanceof GenericContainerScreen);
-        if (containerHasItem(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)))) {
-            System.out.println("Taking out stone shulker");
-            takeItemStackFromContainer(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)));
-        }
-        else {
-            setModuleActive(this, false);
+        getStoneShulker(goalProcess);
+        if (shouldStop){
             return;
         }
-        waitUntilTrue(() -> mc.player.getInventory().main.stream().anyMatch(itemStack -> itemStack.getItem() == Items.SHULKER_BOX));
-        Map<String, Integer> shulkerItems = getShulkerItems(mc.player.getInventory().main.stream().filter(itemStack -> itemStack.getItem() == Items.SHULKER_BOX).toList().getFirst());
+        Map<String, Integer> shulkerItems = getShulkerItems(getFirstItemInPlayerInventory(mc, Items.SHULKER_BOX));
 
         System.out.println("Moving to place shulker");
         baritoneGetToBlock(goalProcess, shulkerPlacePos);
@@ -126,6 +115,18 @@ public class AutoCraftStoneBricks extends Module {
         System.out.println("Placing shulker");
         baritonePlaceBlock(builderProcess, Blocks.SHULKER_BOX, shulkerPlacePos);
 
+        craftAllStoneBricks(shulkerItems);
+
+        System.out.println("Breaking shulker");
+        builderProcess.clearArea(shulkerPlacePos, shulkerPlacePos);
+        baritoneWait(builderProcess);
+        goalProcess.setGoalAndPath(new GoalBlock(shulkerPlacePos));
+        baritoneWait(goalProcess);
+
+        storeStoneBrickShulker(goalProcess);
+    }
+
+    private void craftAllStoneBricks(Map<String, Integer> shulkerItems) {
         while (shulkerItems.getOrDefault("minecraft:stone",0) > 0 || shulkerItems.getOrDefault("minecraft:air", 0) != 0) {
             System.out.println("Opening shulker");
             rightClick(mc, shulkerPlacePos);
@@ -157,16 +158,28 @@ public class AutoCraftStoneBricks extends Module {
         rightClick(mc, shulkerPlacePos);
         waitUntilTrue(() -> mc.currentScreen instanceof ShulkerBoxScreen);
         dumpStoneBricks(shulkerItems);
+    }
 
-        builderProcess.clearArea(shulkerPlacePos, shulkerPlacePos);
-        baritoneWait(builderProcess);
-        goalProcess.setGoalAndPath(new GoalBlock(shulkerPlacePos));
-        baritoneWait(goalProcess);
+    private void getStoneShulker(ICustomGoalProcess goalProcess) {
+        System.out.println("Walking to stone storage");
+        baritoneGetToBlock(goalProcess, stoneStorage.get());
 
-        storeStoneBrickShulker(goalProcess);
+        System.out.println("Opening stone storage");
+        rightClick(mc, stoneStorage.get());
+        waitUntilTrue(() -> mc.currentScreen instanceof GenericContainerScreen);
+        if (containerHasItem(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)))) {
+            System.out.println("Taking out stone shulker");
+            takeItemStackFromContainer(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)));
+        }
+        else {
+            setModuleActive(this, false);
+            shouldStop = true;
+        }
+        waitUntilTrue(() -> playerInventoryHasItem(mc, Items.SHULKER_BOX));
     }
 
     private void storeStoneBrickShulker(ICustomGoalProcess goalProcess) {
+        System.out.println("Storing finished shulker");
         baritoneGetToBlock(goalProcess, stoneBricksStorage.get());
         rightClick(mc, stoneBricksStorage.get());
         waitUntilTrue(() -> mc.currentScreen instanceof GenericContainerScreen);
