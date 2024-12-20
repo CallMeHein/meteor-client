@@ -45,51 +45,15 @@ import static net.minecraft.entity.EntityType.*;
 public class AutoCobbleFarm extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
 
-    private final Setting<Integer> cobbleGenX = sgGeneral.add(new IntSetting.Builder()
-        .name("cobble-x")
-        .description("X coordinate of the cobble generator spot")
-        .defaultValue(0)
-        .noSlider()
+    private final Setting<BlockPos> cobbleGen = sgGeneral.add(new BlockPosSetting.Builder()
+        .name("cobble-generator")
+        .description("BlockPos of the cobblestone generator")
         .build()
     );
 
-    private final Setting<Integer> cobbleGenY = sgGeneral.add(new IntSetting.Builder()
-        .name("cobble-y")
-        .description("Y coordinate of the cobble generator spot")
-        .defaultValue(0)
-        .noSlider()
-        .build()
-    );
-
-    private final Setting<Integer> cobbleGenZ = sgGeneral.add(new IntSetting.Builder()
-        .name("cobble-z")
-        .description("Z coordinate of the cobble generator spot")
-        .defaultValue(0)
-        .noSlider()
-        .build()
-    );
-
-    private final Setting<Integer> expFarmX = sgGeneral.add(new IntSetting.Builder()
-        .name("exp-x")
-        .description("X coordinate of the exp farm spot")
-        .defaultValue(0)
-        .noSlider()
-        .build()
-    );
-
-    private final Setting<Integer> expFarmY = sgGeneral.add(new IntSetting.Builder()
-        .name("exp-y")
-        .description("Y coordinate of the exp farm spot")
-        .defaultValue(0)
-        .noSlider()
-        .build()
-    );
-
-    private final Setting<Integer> expFarmZ = sgGeneral.add(new IntSetting.Builder()
-        .name("exp-z")
-        .description("Z coordinate of the exp farm spot")
-        .defaultValue(0)
-        .noSlider()
+    private final Setting<BlockPos> expFarm = sgGeneral.add(new BlockPosSetting.Builder()
+        .name("exp-farm")
+        .description("BlockPos of the EXP Farm")
         .build()
     );
 
@@ -166,7 +130,7 @@ public class AutoCobbleFarm extends Module {
                 setupAutoTotem(autoTotem);
 
                 // go to cobble gen spot
-                goalProcess.setGoalAndPath(new GoalBlock(cobbleGenX.get(), cobbleGenY.get(), cobbleGenZ.get()));
+                goalProcess.setGoalAndPath(new GoalBlock(cobbleGen.get().getX(), cobbleGen.get().getY(), cobbleGen.get().getZ()));
                 waitForArrival(goalProcess);
                 if (shouldStop) break;
 
@@ -184,7 +148,7 @@ public class AutoCobbleFarm extends Module {
                 setModuleActive(autoTool, false);
 
                 // go to exp farm spot
-                goalProcess.setGoalAndPath(new GoalBlock(expFarmX.get(), expFarmY.get(), expFarmZ.get()));
+                goalProcess.setGoalAndPath(new GoalBlock(expFarm.get().getX(), expFarm.get().getY(), expFarm.get().getZ()));
                 waitForArrival(goalProcess);
                 if (shouldStop) break;
 
@@ -207,7 +171,7 @@ public class AutoCobbleFarm extends Module {
     }
 
     private void validateConditions() {
-        List<Integer> coordinates = List.of(cobbleGenX.get(), cobbleGenY.get(), cobbleGenZ.get(), expFarmX.get(), expFarmY.get(), expFarmZ.get());
+        List<Integer> coordinates = List.of(cobbleGen.get().getX(), cobbleGen.get().getY(), cobbleGen.get().getZ(), expFarm.get().getX(), expFarm.get().getY(), expFarm.get().getZ());
         if (coordinates.stream().anyMatch(coord -> coord == 0)){
             ChatUtils.error("AutoCobbleFarm: Some coordinates are 0, forgot to set them?");
             shouldStop = true;
@@ -263,8 +227,8 @@ public class AutoCobbleFarm extends Module {
         nuker.shape.set(Nuker.Shape.Sphere);
         nuker.mode.set(Nuker.Mode.All);
         nuker.range.set(5.0);
-        nuker.delay.set(3);
-        nuker.maxBlocksPerTick.set(3);
+        nuker.delay.set(4);
+        nuker.maxBlocksPerTick.set(1);
         nuker.sortMode.set(Nuker.SortMode.Closest);
         nuker.swingHand.set(false);
         nuker.packetMine.set(true);
