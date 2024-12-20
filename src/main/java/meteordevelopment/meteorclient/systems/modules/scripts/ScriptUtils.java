@@ -16,6 +16,9 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.component.DataComponentTypes;
@@ -30,9 +33,12 @@ import net.minecraft.item.Items;
 import net.minecraft.network.listener.ServerPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
+import net.minecraft.recipe.CraftingRecipe;
+import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -42,6 +48,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static net.minecraft.util.Hand.MAIN_HAND;
 
@@ -120,10 +127,9 @@ public class ScriptUtils {
     }
 
     static void takeItemStackFromContainer(MinecraftClient mc, Inventory targetContainer, Predicate<ItemStack> isTargetItem) {
-        ScreenHandler screen = mc.player.currentScreenHandler;
-        List<Slot> chestInventory = screen.slots.stream().filter(slot -> slot.inventory.getClass() == targetContainer.getClass()).toList();
+        List<Slot> containerInventory = getContainerSlots(mc, targetContainer);
         AtomicReference<ItemStack> item = new AtomicReference<>();
-        int chestSlotId = chestInventory.stream().filter(slot -> {
+        int chestSlotId = containerInventory.stream().filter(slot -> {
             if(isTargetItem.test(slot.inventory.getStack(slot.id))){
                 item.set(slot.inventory.getStack(slot.id));
                 return true;
@@ -153,14 +159,38 @@ public class ScriptUtils {
         networkHandler.sendPacket(packet);
     }
 
+    static void openShulker(MinecraftClient mc, BlockPos shulkerPos) {
+        rightClick(mc, shulkerPos);
+        waitUntilTrue(() -> mc.currentScreen instanceof ShulkerBoxScreen);
+    }
+
+    static void openChest(MinecraftClient mc, BlockPos chestPos) {
+        rightClick(mc, chestPos);
+        waitUntilTrue(() -> mc.currentScreen instanceof GenericContainerScreen);
+    }
+
+    static void craft(MinecraftClient mc, Item item, boolean craftAll){
+        int craftingResultSlotId = getCraftingResultSlotIndex(mc);
+        RecipeEntry<CraftingRecipe> recipe = (RecipeEntry<CraftingRecipe>) mc.world.getRecipeManager().get(Identifier.of(item.toString().split(":")[0], item.toString().split(":")[1])).get();
+        mc.interactionManager.clickRecipe(mc.player.currentScreenHandler.syncId, recipe,craftAll);
+        waitUntilTrue(() -> slotIsItem(mc, craftingResultSlotId, item), 100);
+        clickSlot(mc, mc.player.currentScreenHandler.slots.get(craftingResultSlotId).getStack(),craftingResultSlotId, SlotActionType.QUICK_MOVE);
+        waitUntilTrue(() -> slotIsItem(mc, craftingResultSlotId, Items.AIR), 100);
+    }
+
     //
     // Data
     //
 
     static boolean containerHasItem(MinecraftClient mc, Inventory targetContainer, Predicate<ItemStack> isTargetItem){
+        List<Slot> containerInventory = getContainerSlots(mc, targetContainer);
+        return containerInventory.stream().anyMatch(slot -> isTargetItem.test(slot.inventory.getStack(slot.id)));
+    }
+
+    static List<Slot> getContainerSlots(MinecraftClient mc, Inventory targetContainer) {
         ScreenHandler screen = mc.player.currentScreenHandler;
-        List<Slot> chestInventory = screen.slots.stream().filter(slot -> slot.inventory.getClass() == targetContainer.getClass()).toList();
-        return chestInventory.stream().anyMatch(slot -> isTargetItem.test(slot.inventory.getStack(slot.id)));
+        List<Slot> containerInventory = screen.slots.stream().filter(slot -> slot.inventory.getClass() == targetContainer.getClass()).toList();
+        return containerInventory;
     }
 
     static boolean isFullShulkerOfItem(ItemStack itemStack, Item targetItem) {
@@ -183,12 +213,12 @@ public class ScriptUtils {
         return items;
     }
 
-    static int getCraftingResultSlotIndex(MinecraftClient mc){
-        return mc.player.currentScreenHandler.slots.stream().filter(slot -> slot.inventory instanceof CraftingResultInventory).findFirst().get().id;
+    static Stream<Slot> filterVisibleSlotsByInventory(MinecraftClient mc, Class<? extends Inventory> inventory){
+        return mc.player.currentScreenHandler.slots.stream().filter(slot -> slot.inventory.getClass() == inventory);
     }
 
-    static List<Integer> getCraftingSlotIndices(MinecraftClient mc){
-        return mc.player.currentScreenHandler.slots.stream().filter(slot -> slot.inventory instanceof CraftingInventory).map(slot -> slot.id).toList();
+    static int getCraftingResultSlotIndex(MinecraftClient mc){
+        return filterVisibleSlotsByInventory(mc, CraftingResultInventory.class).findFirst().get().id;
     }
 
     static List<Slot> getPlayerInventorySlotsWithItem(MinecraftClient mc, Item item){
@@ -211,6 +241,10 @@ public class ScriptUtils {
         return mc.player.getInventory().main.stream().filter(itemStack -> itemStack.getItem() == item).toList().getFirst();
     }
 
+    static boolean slotIsItem(MinecraftClient mc, int slotId, Item item) {
+        return mc.player.currentScreenHandler.getSlot(slotId).getStack().getItem() == item;
+    }
+
     //
     // Flow control
     //
@@ -231,5 +265,19 @@ public class ScriptUtils {
         do {
             sleep(pollingRateMs);
         } while (!condition.get());
+    }
+
+    static void closeScreen(MinecraftClient mc) {
+        mc.execute(() -> {
+            mc.setScreen(null);
+            mc.player.closeHandledScreen();
+        });
+    }
+
+    static void setScreen(MinecraftClient mc, Screen screen) {
+        mc.execute(() -> {
+            mc.setScreen(screen);
+        });
+        waitUntilTrue(() -> mc.currentScreen.getClass() == screen.getClass());
     }
 }

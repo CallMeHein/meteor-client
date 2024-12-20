@@ -8,6 +8,7 @@ import baritone.api.BaritoneAPI;
 import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.process.IBuilderProcess;
 import baritone.api.process.ICustomGoalProcess;
+import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.meteorclient.settings.BlockPosSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -16,19 +17,15 @@ import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.network.MeteorExecutor;
 import meteordevelopment.meteorclient.utils.player.ChatUtils;
+import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.InventoryScreen;
-import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.recipe.CraftingRecipe;
-import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.List;
@@ -63,6 +60,11 @@ public class AutoCraftStoneBricks extends Module {
     }
 
     private boolean shouldStop = false;
+
+    @EventHandler
+    private void onGameLeft(GameLeftEvent event) {
+        setModuleActive(this, false);
+    }
 
      @Override
      public void onDeactivate(){
@@ -129,23 +131,18 @@ public class AutoCraftStoneBricks extends Module {
     private void craftAllStoneBricks(Map<String, Integer> shulkerItems) {
         while (shulkerItems.getOrDefault("minecraft:stone",0) > 0 || shulkerItems.getOrDefault("minecraft:air", 0) != 0) {
             System.out.println("Opening shulker");
-            rightClick(mc, shulkerPlacePos);
-            waitUntilTrue(() -> mc.currentScreen instanceof ShulkerBoxScreen);
+            openShulker(mc, shulkerPlacePos);
 
             dumpStoneBricks(shulkerItems);
             extractStone(shulkerItems);
 
             System.out.println("Opening inventory");
-            mc.execute(() -> {
-                mc.setScreen(null);
-                mc.player.closeHandledScreen();
-                mc.setScreen(new InventoryScreen((mc.player)));
-            });
-            waitUntilTrue(() -> mc.currentScreen instanceof InventoryScreen);
+            closeScreen(mc);
+            setScreen(mc, new InventoryScreen(mc.player));
 
             System.out.println("Crafting stone bricks");
             while (!getPlayerInventorySlotsWithItem(mc, Items.STONE).isEmpty()) {
-                craftStoneBricks();
+                craft(mc, Items.STONE_BRICKS, true);
             }
             mc.execute(() -> {
                 mc.setScreen(null);
@@ -155,8 +152,7 @@ public class AutoCraftStoneBricks extends Module {
 
         // Dump final crafting batch
         System.out.println("Opening shulker");
-        rightClick(mc, shulkerPlacePos);
-        waitUntilTrue(() -> mc.currentScreen instanceof ShulkerBoxScreen);
+        openShulker(mc, shulkerPlacePos);
         dumpStoneBricks(shulkerItems);
     }
 
@@ -165,8 +161,7 @@ public class AutoCraftStoneBricks extends Module {
         baritoneGetToBlock(goalProcess, stoneStorage.get());
 
         System.out.println("Opening stone storage");
-        rightClick(mc, stoneStorage.get());
-        waitUntilTrue(() -> mc.currentScreen instanceof GenericContainerScreen);
+        openChest(mc, stoneStorage.get());
         if (containerHasItem(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)))) {
             System.out.println("Taking out stone shulker");
             takeItemStackFromContainer(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)));
@@ -181,10 +176,9 @@ public class AutoCraftStoneBricks extends Module {
     private void storeStoneBrickShulker(ICustomGoalProcess goalProcess) {
         System.out.println("Storing finished shulker");
         baritoneGetToBlock(goalProcess, stoneBricksStorage.get());
-        rightClick(mc, stoneBricksStorage.get());
-        waitUntilTrue(() -> mc.currentScreen instanceof GenericContainerScreen);
+        openChest(mc, stoneBricksStorage.get());
 
-        Slot shulkerSlot = mc.player.currentScreenHandler.slots.stream().filter(slot -> slot.inventory instanceof PlayerInventory && slot.getStack().getItem() == Items.SHULKER_BOX).toList().getFirst();
+        Slot shulkerSlot = filterVisibleSlotsByInventory(mc, PlayerInventory.class).filter(slot -> slot.getStack().getItem() == Items.SHULKER_BOX).toList().getFirst();
         clickSlot(mc, shulkerSlot.getStack(), shulkerSlot.id, SlotActionType.QUICK_MOVE);
     }
 
@@ -195,7 +189,7 @@ public class AutoCraftStoneBricks extends Module {
             stoneBrickSlots.forEach(slot -> {
                 clickSlot(mc, slot.getStack(), slot.id, SlotActionType.QUICK_MOVE);
                 shulkerItems.put("minecraft:stone_bricks",  shulkerItems.getOrDefault("minecraft:stone_bricks", 0) + slot.getStack().getCount());
-                sleep(100);
+                sleep(50);
             });
         }
     }
@@ -203,24 +197,12 @@ public class AutoCraftStoneBricks extends Module {
     private void extractStone(Map<String, Integer> shulkerItems) {
         System.out.println("Taking stone out of shulker");
         while (playerHasEmptySlots(mc) && containerHasItem(mc, new SimpleInventory(), (itemStack -> itemStack.getItem() == Items.STONE))) {
-            int emptySlots = getPlayerEmptySlotCount(mc);
             takeItemStackFromContainer(mc, new SimpleInventory(), (itemStack -> itemStack.getItem() == Items.STONE));
-            waitUntilTrue(() -> getPlayerEmptySlotCount(mc) != emptySlots, 100);
+            sleep(25);
         }
         int stoneCount = mc.player.getInventory().main.stream()
             .filter(itemStack -> itemStack.getItem() == Items.STONE)
             .mapToInt(ItemStack::getCount).sum();
         shulkerItems.put("minecraft:stone", shulkerItems.get("minecraft:stone") - stoneCount);
-    }
-
-    private void craftStoneBricks(){
-        int craftingResultSlotId = getCraftingResultSlotIndex(mc);
-        RecipeEntry<CraftingRecipe> stoneBrickRecipe = (RecipeEntry<CraftingRecipe>) mc.world.getRecipeManager().get(Identifier.of("minecraft","stone_bricks")).get();
-        System.out.println("Clicking stone brick recipe");
-        mc.interactionManager.clickRecipe(mc.player.currentScreenHandler.syncId, stoneBrickRecipe,true);
-        waitUntilTrue(() -> mc.player.currentScreenHandler.getSlot(craftingResultSlotId).getStack().getItem() == Items.STONE_BRICKS, 100);
-        System.out.println("Fetching craft results");
-        clickSlot(mc, mc.player.currentScreenHandler.slots.get(craftingResultSlotId).getStack(),craftingResultSlotId, SlotActionType.QUICK_MOVE);
-        waitUntilTrue(() -> mc.player.currentScreenHandler.getSlot(craftingResultSlotId).getStack().getItem() == Items.AIR, 100);
     }
 }
