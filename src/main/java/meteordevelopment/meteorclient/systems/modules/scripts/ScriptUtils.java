@@ -5,6 +5,7 @@
 
 package meteordevelopment.meteorclient.systems.modules.scripts;
 
+import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.pathing.goals.GoalGetToBlock;
 import baritone.api.process.IBaritoneProcess;
 import baritone.api.process.IBuilderProcess;
@@ -17,6 +18,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.CraftingScreen;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
 import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
@@ -24,9 +26,9 @@ import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -40,9 +42,7 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -75,6 +75,16 @@ public class ScriptUtils {
     static void baritonePlaceBlock(IBuilderProcess builderProcess, Block block, BlockPos blockPos){
         ISchematic placeBlock = new PlaceStructureSchematic(block);
         builderProcess.build("_", placeBlock, blockPos);
+        baritoneWait(builderProcess);
+    }
+
+    static void baritoneGoto(ICustomGoalProcess goalProcess, BlockPos pos){
+        goalProcess.setGoalAndPath(new GoalBlock(pos));
+        baritoneWait(goalProcess);
+    }
+
+    static void baritoneClearArea(IBuilderProcess builderProcess, BlockPos pos1, BlockPos pos2){
+        builderProcess.clearArea(pos1, pos2);
         baritoneWait(builderProcess);
     }
 
@@ -113,6 +123,13 @@ public class ScriptUtils {
     //
     // Interactions
     //
+
+    static void extractItems(MinecraftClient mc, Item target, int keepEmptySlots) {
+        while (getPlayerEmptySlotCount(mc) > keepEmptySlots && containerHasItem(mc, new SimpleInventory(), (itemStack -> itemStack.getItem() == target))) {
+            takeItemStackFromContainer(mc, new SimpleInventory(), (itemStack -> itemStack.getItem() == target));
+            sleep(25);
+        }
+    }
 
     static void rightClick(MinecraftClient mc, BlockPos position) {
         ClientPlayerInteractionManager interactionManager = mc.interactionManager;
@@ -159,14 +176,40 @@ public class ScriptUtils {
         networkHandler.sendPacket(packet);
     }
 
-    static void openShulker(MinecraftClient mc, BlockPos shulkerPos) {
-        rightClick(mc, shulkerPos);
-        waitUntilTrue(() -> mc.currentScreen instanceof ShulkerBoxScreen);
+    static void openShulker(MinecraftClient mc, ICustomGoalProcess goalProcess, BlockPos shulkerPos) {
+        System.out.println("Opening shulker");
+        openContainer(mc, goalProcess,shulkerPos, ShulkerBoxScreen.class);
     }
 
-    static void openChest(MinecraftClient mc, BlockPos chestPos) {
-        rightClick(mc, chestPos);
-        waitUntilTrue(() -> mc.currentScreen instanceof GenericContainerScreen);
+    static void openChest(MinecraftClient mc, ICustomGoalProcess goalProcess, BlockPos chestPos) {
+        System.out.println("Opening chest");
+        openContainer(mc, goalProcess,chestPos, GenericContainerScreen.class);
+    }
+
+    static void openCraftingTable(MinecraftClient mc, ICustomGoalProcess goalProcess, BlockPos craftingTablePos){
+        System.out.println("Opening crafting table");
+        openContainer(mc, goalProcess,craftingTablePos, CraftingScreen.class);
+    }
+
+    static void openContainer(MinecraftClient mc, ICustomGoalProcess goalProcess, BlockPos pos, Class<? extends Screen> screen){
+        baritoneGetToBlock(goalProcess, pos);
+        while (mc.currentScreen == null || mc.currentScreen.getClass() != screen) {
+            lookAtBlockPos(mc, pos);
+            rightClick(mc, pos);
+            sleep(500);
+        }
+    }
+
+    static void lookAtBlockPos(MinecraftClient mc, BlockPos targetPos) {
+        Vec3d playerPos = mc.player.getPos();
+        Vec3d targetVec = Vec3d.ofCenter(targetPos);
+        Vec3d diff = targetVec.subtract(playerPos);
+
+        double yaw = Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90.0;
+        double pitch = Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z)));
+
+        mc.player.setYaw((float) yaw);
+        mc.player.setPitch((float) pitch);
     }
 
     static void craft(MinecraftClient mc, Item item, boolean craftAll){
@@ -176,6 +219,11 @@ public class ScriptUtils {
         waitUntilTrue(() -> slotIsItem(mc, craftingResultSlotId, item), 100);
         clickSlot(mc, mc.player.currentScreenHandler.slots.get(craftingResultSlotId).getStack(),craftingResultSlotId, SlotActionType.QUICK_MOVE);
         waitUntilTrue(() -> slotIsItem(mc, craftingResultSlotId, Items.AIR), 100);
+    }
+
+    static void breakAndPickupBlock(ICustomGoalProcess goalProcess, IBuilderProcess builderProcess, BlockPos pos){
+        baritoneClearArea(builderProcess, pos, pos);
+        baritoneGoto(goalProcess, pos);
     }
 
     //
@@ -195,6 +243,10 @@ public class ScriptUtils {
 
     static boolean isFullShulkerOfItem(ItemStack itemStack, Item targetItem) {
         return itemStack.getItem() == Items.SHULKER_BOX &&  getShulkerItems(itemStack).get(targetItem.toString()) == 64 * 9 * 3;
+    }
+
+    static int getPlayerInventoryItemCount(MinecraftClient mc, Item item){
+        return mc.player.getInventory().main.stream().mapToInt(itemStack -> itemStack.getItem() == item ? itemStack.getCount() : 0).sum();
     }
 
     static Map<String, Integer> getShulkerItems(ItemStack shulker) {
@@ -245,6 +297,19 @@ public class ScriptUtils {
         return mc.player.currentScreenHandler.getSlot(slotId).getStack().getItem() == item;
     }
 
+    static BlockPos findClosestBlock(MinecraftClient mc, BlockPos searchOrigin, int searchRadius, Block targetBlock){
+        BlockPos pos1 = searchOrigin.add(-searchRadius, -searchRadius, -searchRadius);
+        BlockPos pos2 = searchOrigin.add(searchRadius, searchRadius, searchRadius);
+        List<BlockPos> blocks = (List<BlockPos>) BlockPos.iterate(pos1, pos2);
+        blocks.sort(Comparator.comparingDouble(blockPos -> blockPos.getSquaredDistance(searchOrigin)));
+        for (BlockPos pos : blocks) {
+            if (mc.world.getBlockState(pos).isOf(targetBlock)) {
+                return pos;
+            }
+        }
+        return null;
+    }
+
     //
     // Flow control
     //
@@ -272,6 +337,8 @@ public class ScriptUtils {
             mc.setScreen(null);
             mc.player.closeHandledScreen();
         });
+        waitUntilTrue(() -> mc.currentScreen == null);
+        System.out.println("Closed screen");
     }
 
     static void setScreen(MinecraftClient mc, Screen screen) {

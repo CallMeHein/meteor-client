@@ -117,7 +117,7 @@ public class AutoCraftStoneBricks extends Module {
         System.out.println("Placing shulker");
         baritonePlaceBlock(builderProcess, Blocks.SHULKER_BOX, shulkerPlacePos);
 
-        craftAllStoneBricks(shulkerItems);
+        craftAllStoneBricks(goalProcess, shulkerItems);
 
         System.out.println("Breaking shulker");
         builderProcess.clearArea(shulkerPlacePos, shulkerPlacePos);
@@ -128,10 +128,10 @@ public class AutoCraftStoneBricks extends Module {
         storeStoneBrickShulker(goalProcess);
     }
 
-    private void craftAllStoneBricks(Map<String, Integer> shulkerItems) {
+    private void craftAllStoneBricks(ICustomGoalProcess goalProcess, Map<String, Integer> shulkerItems) {
         while (shulkerItems.getOrDefault("minecraft:stone",0) > 0 || shulkerItems.getOrDefault("minecraft:air", 0) != 0) {
             System.out.println("Opening shulker");
-            openShulker(mc, shulkerPlacePos);
+            openShulker(mc, goalProcess, shulkerPlacePos);
 
             dumpStoneBricks(shulkerItems);
             extractStone(shulkerItems);
@@ -152,7 +152,7 @@ public class AutoCraftStoneBricks extends Module {
 
         // Dump final crafting batch
         System.out.println("Opening shulker");
-        openShulker(mc, shulkerPlacePos);
+        openShulker(mc, goalProcess, shulkerPlacePos);
         dumpStoneBricks(shulkerItems);
     }
 
@@ -161,22 +161,16 @@ public class AutoCraftStoneBricks extends Module {
         baritoneGetToBlock(goalProcess, stoneStorage.get());
 
         System.out.println("Opening stone storage");
-        openChest(mc, stoneStorage.get());
-        if (containerHasItem(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)))) {
-            System.out.println("Taking out stone shulker");
-            takeItemStackFromContainer(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)));
-        }
-        else {
-            setModuleActive(this, false);
-            shouldStop = true;
-        }
+        openChest(mc, goalProcess, stoneStorage.get());
+        System.out.println("Taking out stone shulker");
+        takeItemStackFromContainer(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)));
         waitUntilTrue(() -> playerInventoryHasItem(mc, Items.SHULKER_BOX));
     }
 
     private void storeStoneBrickShulker(ICustomGoalProcess goalProcess) {
         System.out.println("Storing finished shulker");
         baritoneGetToBlock(goalProcess, stoneBricksStorage.get());
-        openChest(mc, stoneBricksStorage.get());
+        openChest(mc, goalProcess, stoneBricksStorage.get());
 
         Slot shulkerSlot = filterVisibleSlotsByInventory(mc, PlayerInventory.class).filter(slot -> slot.getStack().getItem() == Items.SHULKER_BOX).toList().getFirst();
         clickSlot(mc, shulkerSlot.getStack(), shulkerSlot.id, SlotActionType.QUICK_MOVE);
@@ -189,7 +183,6 @@ public class AutoCraftStoneBricks extends Module {
             stoneBrickSlots.forEach(slot -> {
                 clickSlot(mc, slot.getStack(), slot.id, SlotActionType.QUICK_MOVE);
                 shulkerItems.put("minecraft:stone_bricks",  shulkerItems.getOrDefault("minecraft:stone_bricks", 0) + slot.getStack().getCount());
-                sleep(50);
             });
         }
     }
