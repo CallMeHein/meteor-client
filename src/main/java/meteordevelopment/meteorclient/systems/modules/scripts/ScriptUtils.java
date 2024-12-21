@@ -297,17 +297,25 @@ public class ScriptUtils {
         return mc.player.currentScreenHandler.getSlot(slotId).getStack().getItem() == item;
     }
 
-    static BlockPos findClosestBlock(MinecraftClient mc, BlockPos searchOrigin, int searchRadius, Block targetBlock){
-        BlockPos pos1 = searchOrigin.add(-searchRadius, -searchRadius, -searchRadius);
-        BlockPos pos2 = searchOrigin.add(searchRadius, searchRadius, searchRadius);
-        List<BlockPos> blocks = (List<BlockPos>) BlockPos.iterate(pos1, pos2);
-        blocks.sort(Comparator.comparingDouble(blockPos -> blockPos.getSquaredDistance(searchOrigin)));
-        for (BlockPos pos : blocks) {
-            if (mc.world.getBlockState(pos).isOf(targetBlock)) {
-                return pos;
+    static BlockPos findClosestBlock(MinecraftClient mc, BlockPos searchOrigin, int searchRadius, Block targetBlock) {
+        BlockPos closestPos = null;
+        double closestDistance = Double.MAX_VALUE;
+
+        for (int x = -searchRadius; x <= searchRadius; x++) {
+            for (int y = -searchRadius; y <= searchRadius; y++) {
+                for (int z = -searchRadius; z <= searchRadius; z++) {
+                    BlockPos currentPos = searchOrigin.add(x, y, z);
+                    if (mc.world.getBlockState(currentPos).isOf(targetBlock)) {
+                        double distance = searchOrigin.getSquaredDistance(currentPos);
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            closestPos = currentPos;
+                        }
+                    }
+                }
             }
         }
-        return null;
+        return closestPos;
     }
 
     //

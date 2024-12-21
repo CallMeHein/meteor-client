@@ -95,7 +95,7 @@ public class AutoCraftStoneBrickSlabs extends Module {
             return;
         }
         MeteorExecutor.execute(() -> {
-            craftingTablePos = findClosestBlock(mc, mc.player.getBlockPos(), 10, Blocks.CRAFTING_TABLE);
+            craftingTablePos = findClosestBlock(mc, mc.player.getBlockPos(), 20, Blocks.CRAFTING_TABLE);
             baritoneGetToBlock(BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess(), craftingTablePos);
             stoneBrickShulkerPos = mc.player.getBlockPos();
             emptyShulkerPos = stoneBrickShulkerPos.south(1);
