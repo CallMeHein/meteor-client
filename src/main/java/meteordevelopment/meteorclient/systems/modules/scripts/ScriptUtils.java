@@ -18,6 +18,7 @@ import meteordevelopment.meteorclient.systems.modules.Module;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CraftingScreen;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
@@ -350,7 +351,7 @@ public class ScriptUtils {
             mc.setScreen(null);
             mc.player.closeHandledScreen();
         });
-        waitUntilTrue(() -> mc.currentScreen == null);
+        waitUntilTrue(() -> mc.currentScreen == null || mc.currentScreen instanceof GameMenuScreen); // if game is not focused, it defaults to GameMenuScreen
         System.out.println("Closed screen");
     }
 
