@@ -243,8 +243,7 @@ public class ScriptUtils {
 
     static List<Slot> getContainerSlots(MinecraftClient mc, Inventory targetContainer) {
         ScreenHandler screen = mc.player.currentScreenHandler;
-        List<Slot> containerInventory = screen.slots.stream().filter(slot -> slot.inventory.getClass() == targetContainer.getClass()).toList();
-        return containerInventory;
+        return screen.slots.stream().filter(slot -> slot.inventory.getClass() == targetContainer.getClass()).toList();
     }
 
     static boolean isFullShulkerOfItem(ItemStack itemStack, Item targetItem) {
@@ -287,16 +286,8 @@ public class ScriptUtils {
         return (int) mc.player.getInventory().main.stream().filter(itemStack -> itemStack.getItem() == Items.AIR).count();
     }
 
-    static boolean playerHasEmptySlots(MinecraftClient mc) {
-        return getPlayerEmptySlotCount(mc) > 0;
-    }
-
     static boolean playerInventoryHasItem(MinecraftClient mc, Item item) {
         return mc.player.getInventory().main.stream().anyMatch(itemStack -> itemStack.getItem() == item);
-    }
-
-    static ItemStack getFirstItemInPlayerInventory(MinecraftClient mc, Item item) {
-        return mc.player.getInventory().main.stream().filter(itemStack -> itemStack.getItem() == item).toList().getFirst();
     }
 
     static boolean slotIsItem(MinecraftClient mc, int slotId, Item item) {
@@ -356,9 +347,7 @@ public class ScriptUtils {
     }
 
     static void setScreen(MinecraftClient mc, Screen screen) {
-        mc.execute(() -> {
-            mc.setScreen(screen);
-        });
+        mc.execute(() -> mc.setScreen(screen));
         waitUntilTrue(() -> mc.currentScreen.getClass() == screen.getClass());
     }
 }

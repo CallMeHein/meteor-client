@@ -54,8 +54,9 @@ public class AutoCraftStoneBrickSlabs extends Module {
         super(Categories.Script, "auto-craft-stone-brick-slabs", "Automatically craft Stone Brick Slabs");
     }
 
-    private AtomicBoolean shouldStop = new AtomicBoolean(false);
+    private final AtomicBoolean shouldStop = new AtomicBoolean(false);
 
+    @SuppressWarnings("unused")
     @EventHandler
     private void onGameLeft(GameLeftEvent event) {
         setModuleActive(this, false);

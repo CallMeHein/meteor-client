@@ -67,6 +67,7 @@ public class AutoCobbleFarm extends Module {
         runInMainMenu = true; // prevent MeteorExecutor from aborting on game leave
     }
 
+    @SuppressWarnings("unused")
     @EventHandler
     public void onGameJoin(GameJoinedEvent event){
         if (isActive()){
@@ -86,6 +87,7 @@ public class AutoCobbleFarm extends Module {
     }
 
 
+    @SuppressWarnings("unused")
     @EventHandler
     public void onGameLeft(GameLeftEvent event){
         if (isActive()) {
@@ -122,7 +124,7 @@ public class AutoCobbleFarm extends Module {
             if (shouldStop) {
                 setModuleActive(this, false);
                 return;
-            };
+            }
             setModuleActive(autoEat, true);
             ICustomGoalProcess goalProcess = BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess();
             while (true) {
@@ -270,7 +272,7 @@ public class AutoCobbleFarm extends Module {
             if (done) {
                 break;
             }
-            System.out.println("Waiting for pickaxe durability " + pickaxeDurability.toString());
+            System.out.println("Waiting for pickaxe durability " + pickaxeDurability);
             sleep(5000);
         }
     }

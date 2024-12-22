@@ -109,16 +109,15 @@ public class _AutoCraftSlabs {
         BlockPos placedFullBlockShulkerPos
     ){
         // fill initially empty shulker first
-        openShulker(mc, goalProcess, placedEmptyShulkerPos);
-        while (playerInventoryHasItem(mc,slabItem) && containerHasItem(mc, new SimpleInventory(), (itemStack -> itemStack.getItem() == Items.AIR || (itemStack.getItem() == slabItem && itemStack.getCount() != 64)))){
-            Slot slabSlot = getPlayerInventorySlotsWithItem(mc, slabItem).getFirst();
-            clickSlot(mc, slabSlot.getStack(), slabSlot.id, SlotActionType.QUICK_MOVE);
-            sleep(50);
-        }
+        dumpSlabsInShulker(mc, goalProcess, slabItem, placedEmptyShulkerPos);
         closeScreen(mc);
 
         // then the shulker containing full blocks - keep it open for the next step, too
-        openShulker(mc, goalProcess, placedFullBlockShulkerPos);
+        dumpSlabsInShulker(mc, goalProcess, slabItem, placedFullBlockShulkerPos);
+    }
+
+    private static void dumpSlabsInShulker(MinecraftClient mc, ICustomGoalProcess goalProcess, Item slabItem, BlockPos placedEmptyShulkerPos) {
+        openShulker(mc, goalProcess, placedEmptyShulkerPos);
         while (playerInventoryHasItem(mc,slabItem) && containerHasItem(mc, new SimpleInventory(), (itemStack -> itemStack.getItem() == Items.AIR || (itemStack.getItem() == slabItem && itemStack.getCount() != 64)))){
             Slot slabSlot = getPlayerInventorySlotsWithItem(mc, slabItem).getFirst();
             clickSlot(mc, slabSlot.getStack(), slabSlot.id, SlotActionType.QUICK_MOVE);

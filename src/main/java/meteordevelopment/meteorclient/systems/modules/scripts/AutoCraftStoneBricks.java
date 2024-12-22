@@ -59,6 +59,7 @@ public class AutoCraftStoneBricks extends Module {
 
     private boolean shouldStop = false;
 
+    @SuppressWarnings("unused")
     @EventHandler
     private void onGameLeft(GameLeftEvent event) {
         setModuleActive(this, false);
