@@ -34,8 +34,7 @@ public class _AutoCraftSlabs {
         boolean repeat
     ) {
         BlockPos craftingTablePos = findClosestBlock(mc, mc.player.getBlockPos(), 20, Blocks.CRAFTING_TABLE);
-        baritoneGetToBlock(BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess(), craftingTablePos);
-        BlockPos placedFullBlockShulkerPos = mc.player.getBlockPos();
+        BlockPos placedFullBlockShulkerPos = craftingTablePos.south(1);
         BlockPos placedEmptyShulkerPos = placedFullBlockShulkerPos.south(1);
         ICustomGoalProcess goalProcess =  BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess();
         IBuilderProcess builderProcess = BaritoneAPI.getProvider().getPrimaryBaritone().getBuilderProcess();
