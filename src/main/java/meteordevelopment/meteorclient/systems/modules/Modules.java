@@ -33,6 +33,7 @@ import meteordevelopment.meteorclient.systems.modules.render.*;
 import meteordevelopment.meteorclient.systems.modules.render.blockesp.BlockESP;
 import meteordevelopment.meteorclient.systems.modules.render.marker.Marker;
 import meteordevelopment.meteorclient.systems.modules.scripts.AutoCobbleFarm;
+import meteordevelopment.meteorclient.systems.modules.scripts.AutoCraftSmoothStoneSlabs;
 import meteordevelopment.meteorclient.systems.modules.scripts.AutoCraftStoneBrickSlabs;
 import meteordevelopment.meteorclient.systems.modules.scripts.AutoCraftStoneBricks;
 import meteordevelopment.meteorclient.systems.modules.world.Timer;
@@ -585,6 +586,7 @@ public class Modules extends System<Modules> {
         add(new AutoCobbleFarm());
         add(new AutoCraftStoneBricks());
         add(new AutoCraftStoneBrickSlabs());
+        add(new AutoCraftSmoothStoneSlabs());
     }
 
     private void initMisc() {

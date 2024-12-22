@@ -7,6 +7,7 @@ package meteordevelopment.meteorclient.systems.modules.scripts;
 
 import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.pathing.goals.GoalGetToBlock;
+import baritone.api.pathing.goals.GoalNear;
 import baritone.api.process.IBaritoneProcess;
 import baritone.api.process.IBuilderProcess;
 import baritone.api.process.ICustomGoalProcess;
@@ -72,6 +73,11 @@ public class ScriptUtils {
         baritoneWait(goalProcess);
     }
 
+    static void baritoneGetNearBlock(ICustomGoalProcess goalProcess, BlockPos pos, int range){
+        goalProcess.setGoalAndPath(new GoalNear(pos, range));
+        baritoneWait(goalProcess);
+    }
+
     static void baritonePlaceBlock(IBuilderProcess builderProcess, Block block, BlockPos blockPos){
         ISchematic placeBlock = new PlaceStructureSchematic(block);
         builderProcess.build("_", placeBlock, blockPos);
@@ -102,10 +108,10 @@ public class ScriptUtils {
             this.toPlace = blocksToPlace;
         }
 
+        // stolen from Altoclef idk, it works
         @Override
         public BlockState desiredState(int x, int y, int z, BlockState blockState, List<BlockState> available) {
             if (x == 0 && y == 0 && z == 0) {
-                // Place!!
                 if (!available.isEmpty()) {
                     for (BlockState possible : available) {
                         if (possible == null) continue;
@@ -115,7 +121,6 @@ public class ScriptUtils {
                     }
                 }
             }
-            // Don't care.
             return blockState;
         }
     }
