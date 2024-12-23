@@ -94,7 +94,7 @@ public class _AutoCraftSlabs {
     public static void retrieveAndPlaceShulker(MinecraftClient mc, ICustomGoalProcess goalProcess, IBuilderProcess builderProcess, BlockPos storagePos, BlockPos shulkerPlacePos) {
         baritoneGetNearBlock(goalProcess, storagePos, 2);
         openChest(mc, goalProcess, storagePos);
-        takeItemStackFromContainer(mc,new SimpleInventory(), (itemStack -> itemStack.getItem() == Items.SHULKER_BOX));
+        takeItemStackFromContainer(mc, SimpleInventory.class, (itemStack -> itemStack.getItem() == Items.SHULKER_BOX));
         waitUntilTrue(() -> playerInventoryHasItem(mc, Items.SHULKER_BOX));
         closeScreen(mc);
         baritonePlaceBlock(builderProcess, Blocks.SHULKER_BOX, shulkerPlacePos);
@@ -117,7 +117,7 @@ public class _AutoCraftSlabs {
 
     private static void dumpSlabsInShulker(MinecraftClient mc, ICustomGoalProcess goalProcess, Item slabItem, BlockPos placedEmptyShulkerPos) {
         openShulker(mc, goalProcess, placedEmptyShulkerPos);
-        while (playerInventoryHasItem(mc,slabItem) && containerHasItem(mc, new SimpleInventory(), (itemStack -> itemStack.getItem() == Items.AIR || (itemStack.getItem() == slabItem && itemStack.getCount() != 64)))){
+        while (playerInventoryHasItem(mc, slabItem) && containerHasItem(mc, SimpleInventory.class, (itemStack -> itemStack.getItem() == Items.AIR || (itemStack.getItem() == slabItem && itemStack.getCount() != 64)))){
             Slot slabSlot = getPlayerInventorySlotsWithItem(mc, slabItem).getFirst();
             clickSlot(mc, slabSlot.getStack(), slabSlot.id, SlotActionType.QUICK_MOVE);
             sleep(50);

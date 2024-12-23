@@ -5,9 +5,7 @@
 
 package meteordevelopment.meteorclient.systems.modules.scripts;
 
-import baritone.api.pathing.goals.GoalBlock;
-import baritone.api.pathing.goals.GoalGetToBlock;
-import baritone.api.pathing.goals.GoalNear;
+import baritone.api.pathing.goals.*;
 import baritone.api.process.IBaritoneProcess;
 import baritone.api.process.IBuilderProcess;
 import baritone.api.process.ICustomGoalProcess;
@@ -22,11 +20,14 @@ import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CraftingScreen;
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen;
+import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.gui.screen.ingame.ShulkerBoxScreen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ContainerComponent;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.CraftingResultInventory;
 import net.minecraft.inventory.Inventory;
@@ -39,19 +40,24 @@ import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.RecipeEntry;
+import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.*;
+import net.minecraft.village.TradeOffer;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.BuyOrSell.BUY;
 import static net.minecraft.util.Hand.MAIN_HAND;
 
 public class ScriptUtils {
@@ -131,25 +137,40 @@ public class ScriptUtils {
     //
 
     static void extractItems(MinecraftClient mc, Item target, int keepEmptySlots) {
-        while (getPlayerEmptySlotCount(mc) > keepEmptySlots && containerHasItem(mc, new SimpleInventory(), (itemStack -> itemStack.getItem() == target))) {
-            takeItemStackFromContainer(mc, new SimpleInventory(), (itemStack -> itemStack.getItem() == target));
+        while (getPlayerEmptySlotCount(mc) > keepEmptySlots && containerHasItem(mc, SimpleInventory.class, (itemStack -> itemStack.getItem() == target))) {
+            takeItemStackFromContainer(mc, SimpleInventory.class, (itemStack -> itemStack.getItem() == target));
             sleep(25);
         }
     }
 
-    static void rightClick(MinecraftClient mc, BlockPos position) {
+    static void rightClickBlock(MinecraftClient mc, BlockPos position) {
         ClientPlayerInteractionManager interactionManager = mc.interactionManager;
         assert interactionManager != null;
         mc.execute(() ->
-            interactionManager.interactBlock(mc.player, MAIN_HAND, new BlockHitResult(
-                Vec3d.ofCenter(position),
-                Direction.UP,
-                position,
-                false
-            )));
+            interactionManager.interactBlock(
+                mc.player,
+                MAIN_HAND,
+                new BlockHitResult(
+                    Vec3d.ofCenter(position),
+                    Direction.UP,
+                    position,
+                    false
+                )
+            )
+        );
     }
 
-    static void takeItemStackFromContainer(MinecraftClient mc, Inventory targetContainer, Predicate<ItemStack> isTargetItem) {
+    static void rightClickEntity(MinecraftClient mc, Entity entity) {
+        ClientPlayerInteractionManager interactionManager = mc.interactionManager;
+        assert interactionManager != null;
+        mc.execute(() -> interactionManager.interactEntity(
+            mc.player,
+            entity,
+            Hand.MAIN_HAND
+        ));
+    }
+
+    static void takeItemStackFromContainer(MinecraftClient mc, Class<? extends Inventory> targetContainer, Predicate<ItemStack> isTargetItem) {
         List<Slot> containerInventory = getContainerSlots(mc, targetContainer);
         AtomicReference<ItemStack> item = new AtomicReference<>();
         int chestSlotId = containerInventory.stream().filter(slot -> {
@@ -201,7 +222,7 @@ public class ScriptUtils {
         baritoneGetToBlock(goalProcess, pos);
         while (mc.currentScreen == null || mc.currentScreen.getClass() != screen) {
             lookAtBlockPos(mc, pos);
-            rightClick(mc, pos);
+            rightClickBlock(mc, pos);
             sleep(500);
         }
     }
@@ -232,18 +253,49 @@ public class ScriptUtils {
         baritoneGoto(goalProcess, pos);
     }
 
+    static void selectVillagerTrade(MinecraftClient mc, BuyOrSell buyOrSell, Item targetItem) {
+        MerchantScreen merchantScreen = (MerchantScreen) mc.currentScreen;
+        MerchantScreenHandler merchantScreenHandler = merchantScreen.getScreenHandler();
+        List<TradeOffer> tradeOffers = merchantScreenHandler.getRecipes();
+        for (int i = 0; i < tradeOffers.size(); i++) {
+            TradeOffer offer = tradeOffers.get(i);
+            Item villagerWants = buyOrSell == BUY ? offer.getSellItem().getItem() : offer.getDisplayedFirstBuyItem().getItem();
+            if (villagerWants == targetItem) {
+                int onScreenIndex = i;
+                // trade screen only shows 7/10 of the trades, if we need one of the last 3 trades we scroll down and adjust the index accordingly
+                if (i > 7){
+                    onScreenIndex -= 3;
+                    merchantScreen.mouseScrolled(0,0,0,-3);
+                    sleep(250);
+                }
+                getTradeOfferWidgets(merchantScreen)[onScreenIndex].onPress();
+                break;
+            }
+        }
+    }
+
+    private static ButtonWidget[] getTradeOfferWidgets(MerchantScreen merchantScreen) {
+        try {
+            Field offersField = MerchantScreen.class.getDeclaredField("offers");
+            offersField.setAccessible(true);
+            return (ButtonWidget[]) offersField.get(merchantScreen);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     //
     // Data
     //
 
-    static boolean containerHasItem(MinecraftClient mc, Inventory targetContainer, Predicate<ItemStack> isTargetItem){
+    static boolean containerHasItem(MinecraftClient mc, Class<? extends Inventory> targetContainer, Predicate<ItemStack> isTargetItem){
         List<Slot> containerInventory = getContainerSlots(mc, targetContainer);
         return containerInventory.stream().anyMatch(slot -> isTargetItem.test(slot.inventory.getStack(slot.id)));
     }
 
-    static List<Slot> getContainerSlots(MinecraftClient mc, Inventory targetContainer) {
+    static List<Slot> getContainerSlots(MinecraftClient mc, Class<? extends Inventory> targetInventory) {
         ScreenHandler screen = mc.player.currentScreenHandler;
-        return screen.slots.stream().filter(slot -> slot.inventory.getClass() == targetContainer.getClass()).toList();
+        return screen.slots.stream().filter(slot -> slot.inventory.getClass() == targetInventory).toList();
     }
 
     static boolean isFullShulkerOfItem(ItemStack itemStack, Item targetItem) {
@@ -315,6 +367,12 @@ public class ScriptUtils {
         return closestPos;
     }
 
+    static <T extends Entity> List<T> getEntitiesByClass(MinecraftClient mc, Class<T> targetEntity) {
+        List<Entity> entities = new ArrayList<>();
+        mc.world.getEntities().forEach(entities::add);
+        return (List<T>) entities.stream().filter(entity -> entity.getClass() == targetEntity).toList();
+    }
+
     //
     // Flow control
     //
@@ -349,5 +407,10 @@ public class ScriptUtils {
     static void setScreen(MinecraftClient mc, Screen screen) {
         mc.execute(() -> mc.setScreen(screen));
         waitUntilTrue(() -> mc.currentScreen.getClass() == screen.getClass());
+    }
+
+    enum BuyOrSell {
+        BUY,
+        SELL
     }
 }

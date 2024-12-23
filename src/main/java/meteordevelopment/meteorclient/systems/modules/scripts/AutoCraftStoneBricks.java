@@ -150,7 +150,7 @@ public class AutoCraftStoneBricks extends Module {
         baritoneGetToBlock(goalProcess, stoneStorage.get());
 
         openChest(mc, goalProcess, stoneStorage.get());
-        takeItemStackFromContainer(mc, new SimpleInventory(), (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)));
+        takeItemStackFromContainer(mc, SimpleInventory.class, (itemStack -> isFullShulkerOfItem(itemStack, Items.STONE)));
         waitUntilTrue(() -> playerInventoryHasItem(mc, Items.SHULKER_BOX));
     }
 
