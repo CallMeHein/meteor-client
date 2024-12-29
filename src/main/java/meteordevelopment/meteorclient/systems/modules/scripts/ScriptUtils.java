@@ -38,6 +38,7 @@ import net.minecraft.item.Items;
 import net.minecraft.network.listener.ServerPlayPacketListener;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.screen.MerchantScreenHandler;
@@ -161,13 +162,22 @@ public class ScriptUtils {
     }
 
     static void rightClickEntity(MinecraftClient mc, Entity entity) {
-        ClientPlayerInteractionManager interactionManager = mc.interactionManager;
-        assert interactionManager != null;
-        mc.execute(() -> interactionManager.interactEntity(
-            mc.player,
-            entity,
-            Hand.MAIN_HAND
-        ));
+        mc.execute(() -> {
+            PlayerInteractEntityC2SPacket interactAtPacket = PlayerInteractEntityC2SPacket.interactAt(
+                entity,
+            false,
+                Hand.MAIN_HAND,
+                entity.getBlockPos().toCenterPos()
+            );
+
+            PlayerInteractEntityC2SPacket interactPacket = PlayerInteractEntityC2SPacket.interact(
+                entity,
+                false,
+                Hand.MAIN_HAND
+            );
+            mc.getNetworkHandler().sendPacket(interactAtPacket);
+            mc.getNetworkHandler().sendPacket(interactPacket);
+        });
     }
 
     static void takeItemStackFromContainer(MinecraftClient mc, Class<? extends Inventory> targetContainer, Predicate<ItemStack> isTargetItem) {
@@ -275,11 +285,22 @@ public class ScriptUtils {
     }
 
     private static ButtonWidget[] getTradeOfferWidgets(MerchantScreen merchantScreen) {
+        Field offersField;
         try {
-            Field offersField = MerchantScreen.class.getDeclaredField("offers");
+            offersField = MerchantScreen.class.getDeclaredField("offers");
             offersField.setAccessible(true);
+        } catch (NoSuchFieldException ignored) {
+            try {
+                offersField = MerchantScreen.class.getDeclaredField("field_19162");
+                offersField.setAccessible(true);
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        try {
             return (ButtonWidget[]) offersField.get(merchantScreen);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }

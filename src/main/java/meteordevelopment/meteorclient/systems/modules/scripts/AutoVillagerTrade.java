@@ -61,6 +61,7 @@ public class AutoVillagerTrade extends Module {
     private final Setting<Item> targetItem = sgGeneral.add(new ItemSetting.Builder()
         .name("target-item")
         .description("Which item to buy/sell")
+        .filter((item -> List.of(Items.EXPERIENCE_BOTTLE, Items.STONE).contains(item)))
         .defaultValue(Items.EXPERIENCE_BOTTLE)
         .build()
     );
@@ -90,6 +91,7 @@ public class AutoVillagerTrade extends Module {
 
     @Override
     public void onActivate() {
+        BaritoneAPI.getSettings().allowBreak.value = false;
         shouldStop = false;
         MeteorExecutor.execute(() -> {
             do {
@@ -112,17 +114,19 @@ public class AutoVillagerTrade extends Module {
         Item outputItem = buyOrSell.get() == BuyOrSell.BUY ? targetItem.get() : Items.EMERALD; // if we're buying items, we store the target item. if we're selling items, we store emeralds
 
         openChest(mc, goalProcess, inputStorage.get());
-        while(getPlayerEmptySlotCount(mc) > 1 && containerHasItem(mc, SimpleInventory.class, (itemStack -> itemStack.getItem() == inputItem))) {
+        while(!shouldStop && getPlayerEmptySlotCount(mc) > 1 && containerHasItem(mc, SimpleInventory.class, (itemStack -> itemStack.getItem() == inputItem))) {
             takeItemStackFromContainer(mc, SimpleInventory.class, (itemStack -> itemStack.getItem() == inputItem));
             sleep(50);
         }
         closeScreen(mc);
 
-        while (!villagers.isEmpty()) {
+        while (!shouldStop && !villagers.isEmpty()) {
+            if (!playerHasMinTradeAmount(inputItem, outputItem)){
+                break;
+            }
             VillagerEntity villager = villagers.getFirst();
             baritoneGetNearBlock(goalProcess,villager.getBlockPos(), 2);
-            sleep(250);
-            tradeAllWithVillager(villager, villager.getBlockPos());
+            tradeAllWithVillager(villager, villager.getBlockPos(), outputItem);
             closeScreen(mc);
             // recalculate closest Villager
             villagers.removeFirst();
@@ -130,7 +134,12 @@ public class AutoVillagerTrade extends Module {
         }
 
         openChest(mc, goalProcess, outputStorage.get());
-        while(playerInventoryHasItem(mc, outputItem)){
+        if (!playerInventoryHasItem(mc, outputItem)){
+            shouldStop = true;
+            closeScreen(mc);
+            return;
+        }
+        while(!shouldStop && playerInventoryHasItem(mc, outputItem)){
             for (Slot slot : getContainerSlots(mc, PlayerInventory.class).stream().filter(slot -> slot.getStack().getItem() == outputItem).toList()){
                 if (containerHasItem(mc, SimpleInventory.class, (itemStack -> itemStack.getItem() == Items.AIR))){
                     clickSlot(mc, slot.getStack(), slot.id, SlotActionType.QUICK_MOVE);
@@ -140,21 +149,21 @@ public class AutoVillagerTrade extends Module {
         }
     }
 
-    private void tradeAllWithVillager(VillagerEntity villager, BlockPos villagerPos) {
-        while (true){
+    private void tradeAllWithVillager(VillagerEntity villager, BlockPos villagerPos, Item outputItem) {
+        while (!shouldStop){
             lookAtBlockPos(mc, villagerPos);
-            sleep(250);
+            sleep(50);
             rightClickEntity(mc, villager);
             waitUntilTrue(() -> mc.currentScreen instanceof MerchantScreen);
             selectVillagerTrade(mc, buyOrSell.get(), targetItem.get());
             TradeOutputSlot tradeOutputSlot = (TradeOutputSlot) mc.player.currentScreenHandler.slots.stream().filter(slot -> slot instanceof TradeOutputSlot).findFirst().get();
-            sleep(250);
-            if(!slotIsItem(mc, tradeOutputSlot.id, targetItem.get())){
+            sleep(50);
+            if(!slotIsItem(mc, tradeOutputSlot.id, outputItem)){
                 // clicked the trade but the output is not the target item -> trade is locked or we can't afford it, this villager is done
                 break;
             }
             clickSlot(mc,tradeOutputSlot.getStack(), tradeOutputSlot.id, SlotActionType.QUICK_MOVE);
-            sleep(250);
+            sleep(50);
             closeScreen(mc);
         }
     }
@@ -166,6 +175,18 @@ public class AutoVillagerTrade extends Module {
         }
         if (profession == MASON){
             return List.of(Items.STONE).contains(targetItem.get());
+        }
+        return false;
+    }
+
+    private boolean playerHasMinTradeAmount(Item inputItem, Item outputItem) {
+        List<Slot> inputItemSlots = getPlayerInventorySlotsWithItem(mc, inputItem);
+        int inputItemCount = inputItemSlots.stream().mapToInt(slot -> slot.getStack().getCount()).sum();
+        if(outputItem == Items.EXPERIENCE_BOTTLE){
+            return inputItemCount >= 3;
+        }
+        if (inputItem == Items.STONE){
+            return inputItemCount >= 20;
         }
         return false;
     }
