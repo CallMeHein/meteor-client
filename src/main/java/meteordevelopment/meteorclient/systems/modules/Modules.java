@@ -585,6 +585,7 @@ public class Modules extends System<Modules> {
         add(new AutoCraftStoneBrickSlabs());
         add(new AutoCraftSmoothStoneSlabs());
         add(new AutoVillagerTrade());
+        add(new ModuleSequencer());
     }
 
     private void initMisc() {

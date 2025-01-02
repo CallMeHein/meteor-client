@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.fullyJoinedServer;
 import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.setModuleActive;
 import static net.minecraft.block.Blocks.COBBLESTONE;
 import static net.minecraft.enchantment.Enchantments.MENDING;
@@ -57,6 +58,13 @@ public class AutoCobbleFarm extends Module {
         .build()
     );
 
+    public final Setting<Boolean> repeat = sgGeneral.add(new BoolSetting.Builder()
+        .name("repeat")
+        .description("Repeats until the module is deactivated")
+        .defaultValue(false)
+        .build()
+    );
+
     private boolean shouldStop = false;
     private BlockPos baritoneGoal;
     private boolean joining = false;
@@ -73,7 +81,7 @@ public class AutoCobbleFarm extends Module {
         if (isActive()){
             joining = true;
             MeteorExecutor.execute(() -> {
-                while (!fullyJoinedServer()){
+                while (!fullyJoinedServer(mc)){
                     sleep(5000);
                 }
                 sleep(5000);
@@ -127,7 +135,7 @@ public class AutoCobbleFarm extends Module {
             }
             setModuleActive(autoEat, true);
             ICustomGoalProcess goalProcess = BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess();
-            while (true) {
+            do {
                 // get pickaxes out of offhand slot
                 setupAutoTotem(autoTotem);
 
@@ -167,7 +175,13 @@ public class AutoCobbleFarm extends Module {
                 setModuleActive(inventoryTweaks, true);
                 setModuleActive(killAura, false);
                 setModuleActive(autoMend, false);
-            }
+
+                // If not repeating, stop after one round
+                if (!repeat.get()) {
+                    ChatUtils.info("AutoCobbleFarm: Round complete.");
+                    shouldStop = true;
+                }
+            } while (!shouldStop);
             setModuleActive(this, false);
         });
     }
@@ -208,7 +222,7 @@ public class AutoCobbleFarm extends Module {
     }
 
     private void waitForArrival(ICustomGoalProcess goalProcess) {
-        while (joining || (goalProcess.isActive() && !shouldStop) || !fullyJoinedServer()) {
+        while (joining || (goalProcess.isActive() && !shouldStop) || !fullyJoinedServer(mc)) {
             sleep(1000);
         }
     }
@@ -256,7 +270,7 @@ public class AutoCobbleFarm extends Module {
 
     private void waitForPickaxeDurability(AutoTool autoTool, PickaxeDurability pickaxeDurability) {
         while(!shouldStop) {
-            if (!fullyJoinedServer()){
+            if (!fullyJoinedServer(mc)){
                 sleep(500);
                 continue;
             }
@@ -288,13 +302,5 @@ public class AutoCobbleFarm extends Module {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private boolean fullyJoinedServer() {
-        ClientPlayerEntity player = mc.player;
-        if (player == null) return false;
-        PlayerInventory inventory = player.getInventory();
-        if (inventory == null) return false;
-        return inventory.main.stream().anyMatch(itemStack -> itemStack.getItem() != Items.AIR); // if we have any non-air item, we're out of the queue
     }
 }

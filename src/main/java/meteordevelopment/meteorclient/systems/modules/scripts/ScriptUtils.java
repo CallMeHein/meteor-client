@@ -430,6 +430,13 @@ public class ScriptUtils {
         waitUntilTrue(() -> mc.currentScreen.getClass() == screen.getClass());
     }
 
+    public static boolean fullyJoinedServer(MinecraftClient mc) {
+        if (mc.player == null) return false;
+        PlayerInventory inventory = mc.player.getInventory();
+        if (inventory == null) return false;
+        return inventory.main.stream().anyMatch(itemStack -> itemStack.getItem() != Items.AIR);
+    }
+
     enum BuyOrSell {
         BUY,
         SELL
