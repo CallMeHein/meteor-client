@@ -7,6 +7,7 @@ package meteordevelopment.meteorclient.systems.modules.scripts;
 
 import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.fullyJoinedServer;
 import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.setModuleActive;
+import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.sleep;
 
 import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
@@ -54,12 +55,10 @@ public class ModuleSequencer extends Module {
             AutoCobbleFarm cobbleFarm = Modules.get().get(AutoCobbleFarm.class);
             Nuker nuker = Modules.get().get(Nuker.class);
 
-            if (villagerTrade.isActive())
-                villagerTrade.toggle();
+            setModuleActive(villagerTrade, false);
             if (cobbleFarm.isActive()) {
-                if (nuker.isActive())
-                    nuker.toggle();
-                cobbleFarm.toggle();
+                setModuleActive(nuker, false);
+                setModuleActive(cobbleFarm, false);
             }
         }
     }
@@ -70,10 +69,8 @@ public class ModuleSequencer extends Module {
         AutoVillagerTrade villagerTrade = Modules.get().get(AutoVillagerTrade.class);
         AutoCobbleFarm cobbleFarm = Modules.get().get(AutoCobbleFarm.class);
 
-        if (villagerTrade.isActive())
-            villagerTrade.toggle();
-        if (cobbleFarm.isActive())
-            cobbleFarm.toggle();
+        setModuleActive(villagerTrade, false);
+        setModuleActive(cobbleFarm, false);
     }
 
     @Override
@@ -96,7 +93,7 @@ public class ModuleSequencer extends Module {
 
                     // Ensure repeat is disabled
                     villagerTrade.repeat.set(false);
-                    villagerTrade.toggle();
+                    setModuleActive(villagerTrade, true);
 
                     // Wait for AutoVillagerTrade to complete
                     while (villagerTrade.isActive() && !shouldStop) {
@@ -114,7 +111,7 @@ public class ModuleSequencer extends Module {
 
                     // Ensure repeat is disabled
                     cobbleFarm.repeat.set(false);
-                    cobbleFarm.toggle();
+                    setModuleActive(cobbleFarm, true);
 
                     // Wait for AutoCobbleFarm to complete
                     while (cobbleFarm.isActive() && !shouldStop) {
@@ -132,13 +129,5 @@ public class ModuleSequencer extends Module {
                 setModuleActive(this, false);
             }
         });
-    }
-
-    private void sleep(int ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
