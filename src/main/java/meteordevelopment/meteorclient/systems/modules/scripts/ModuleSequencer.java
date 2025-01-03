@@ -5,12 +5,18 @@
 
 package meteordevelopment.meteorclient.systems.modules.scripts;
 
+import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.baritoneGoto;
 import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.fullyJoinedServer;
 import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.setModuleActive;
 import static meteordevelopment.meteorclient.systems.modules.scripts.ScriptUtils.sleep;
 
+import baritone.api.BaritoneAPI;
+import baritone.api.process.ICustomGoalProcess;
 import meteordevelopment.meteorclient.events.game.GameJoinedEvent;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
+import meteordevelopment.meteorclient.settings.BlockPosSetting;
+import meteordevelopment.meteorclient.settings.Setting;
+import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
@@ -22,8 +28,17 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.util.math.BlockPos;
 
 public class ModuleSequencer extends Module {
+    private final SettingGroup sgGeneral = settings.getDefaultGroup();
+
+    private final Setting<BlockPos> home = sgGeneral.add(new BlockPosSetting.Builder()
+        .name("home")
+        .description("Location to return to between modules")
+        .build()
+    );
+
     private boolean shouldStop = false;
     private boolean moduleRunning = false;
     private boolean joining = false;
@@ -77,13 +92,19 @@ public class ModuleSequencer extends Module {
     public void onActivate() {
         shouldStop = false;
         moduleRunning = false;
+        ICustomGoalProcess goalProcess = BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess();
 
         MeteorExecutor.execute(() -> {
+
             while (!shouldStop) {
                 if (joining || !fullyJoinedServer(mc)) {
                     sleep(1000);
                     continue;
                 }
+
+                // Return home when starting
+                ChatUtils.info("Returning home...");
+                baritoneGoto(goalProcess, home.get());
 
                 // Start AutoVillagerTrade
                 if (!moduleRunning) {
@@ -101,7 +122,12 @@ public class ModuleSequencer extends Module {
                     }
                     moduleRunning = false;
                     if (shouldStop) break;
+
                 }
+
+                // Return home after AutoVillagerTrade
+                ChatUtils.info("Returning home...");
+                baritoneGoto(goalProcess, home.get());
 
                 // Start AutoCobbleFarm
                 if (!moduleRunning) {
@@ -119,7 +145,12 @@ public class ModuleSequencer extends Module {
                     }
                     moduleRunning = false;
                     if (shouldStop) break;
+
                 }
+
+                // Return home after AutoCobbleFarm
+                ChatUtils.info("Returning home...");
+                baritoneGoto(goalProcess, home.get());
 
                 sleep(1000); // Small delay between cycles
             }
