@@ -17,6 +17,20 @@
     <img src="https://img.shields.io/endpoint?url=https://ghloc.vercel.app/api/MeteorDevelopment/meteor-client/badge?filter=.java$&label=lines%20of%20code&color=blue" alt="GitHub lines of code"/>
 </div>
 
+## Additions built upon Meteor 5.8
+
+Utilities/Scripts used for the expansion of the Western Overworld Highway on 2b2t
+
+- AutoEat: "Pause Auras" options also pauses Nuker
+- AutoTool: Can also pull items from the inventory, not just the hotbar (Credit: MeteorTweaks)
+- GhostBlockFixer: Module adopted from Meteor+
+- Nuker: "Packet Mine" option respects AutoTools's "Anti Break" option
+
+- Scripts:
+  - AutoCobbleFarm: Mine Cobblestone with Nuker, mend pickaxes at a Mob XP Farm
+  - AutoCraft*: Craft materials used for the Western Overworld Highway
+  - AutoVillagerTrade: Trade for XP Bottles with villagers (using Stone)
+
 ## Usage
 
 ### Building
